@@ -1,0 +1,12 @@
+# Logs
+logs
+*.log
+
+# Root Package Folder
+.vs/
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+WindowsNoEditor/
+Content/
