@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Weapons/ShooterWeaponBase.h"
+#include "Entries/ShooterWeaponEntry.h"
 #include "Items/ShooterItem.h"
 #include "ShooterAssetManager.h"
 #include "ShooterWeaponItem.generated.h"
@@ -22,6 +23,10 @@ public:
 	{
 		ItemType = UShooterAssetManager::WeaponItemType;
 	}
+
+	/** Pawn Data */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
+	FShooterWeaponEntry PawnEntry;
 
 	/** Weapon actor to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)

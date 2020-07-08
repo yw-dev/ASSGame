@@ -119,92 +119,92 @@ void SShooterTabWidget::Construct(const FArguments& InArgs)
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Left)
 					.VAlign(VAlign_Fill)
-				[
-				SNew(SBox)
-				.WidthOverride(MenuHeaderWidth)
-				.HeightOverride(MenuHeaderHeight)
-				[
-					SNew(SImage)
-					.ColorAndOpacity(this, &SShooterTabWidget::GetHeaderColor)
-					.Image(&MenuStyle->HeaderBackgroundBrush)
-				]
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Fill)
-			[
-				SNew(SBox)
-				.WidthOverride(MenuHeaderWidth)
-				.HeightOverride(MenuHeaderHeight)
-				.VAlign(VAlign_Center)
-				.HAlign(HAlign_Center)
-				[
-					SNew(STextBlock)
-					.TextStyle(FShooterStyle::Get(), "ShooterGame.MenuHeaderTextStyle")
-					.ColorAndOpacity(MenuTitleTextColor)
-					.Text(this, &SShooterTabWidget::GetMenuTitle)
-				]
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
-			.ColorAndOpacity(this, &SShooterTabWidget::GetBottomColor)
-			.VAlign(VAlign_Top)
-			.HAlign(HAlign_Left)
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				[
-					SNew(SVerticalBox)
-					.Clipping(EWidgetClipping::ClipToBounds)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					//.Padding(TAttribute<FMargin>(this, &SShooterTabWidget::GetLeftMenuOffset))
 					[
-						SNew(SBorder)
-						.BorderImage(&MenuStyle->LeftBackgroundBrush)
-						.BorderBackgroundColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
-						.Padding(FMargin(OutlineWidth))
-						.DesiredSizeScale(this, &SShooterTabWidget::GetBottomScale)
-						.VAlign(VAlign_Top)
-						.HAlign(HAlign_Left)
-						[
-							SAssignNew(LeftBox, SHorizontalBox)
-							.Clipping(EWidgetClipping::ClipToBounds)
-						]
+					SNew(SBox)
+					.WidthOverride(MenuHeaderWidth)
+					.HeightOverride(MenuHeaderHeight)
+					[
+						SNew(SImage)
+						.ColorAndOpacity(this, &SShooterTabWidget::GetHeaderColor)
+						.Image(&MenuStyle->HeaderBackgroundBrush)
 					]
 				]
-				+ SVerticalBox::Slot()
-				.AutoHeight()
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Fill)
 				[
-					SNew(SVerticalBox)
-					.Clipping(EWidgetClipping::ClipToBounds)
-					+ SVerticalBox::Slot()
-					//.Padding(TAttribute<FMargin>(this, &SShooterTabWidget::GetSubMenuOffset))
-					.AutoHeight()
+					SNew(SBox)
+					.WidthOverride(MenuHeaderWidth)
+					.HeightOverride(MenuHeaderHeight)
+					.VAlign(VAlign_Center)
+					.HAlign(HAlign_Center)
 					[
-						SNew(SBorder)
-						.BorderImage(&MenuStyle->RightBackgroundBrush)
-						.BorderBackgroundColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
-						.Padding(FMargin(OutlineWidth))
-						.DesiredSizeScale(this, &SShooterTabWidget::GetBottomScale)
-						.VAlign(VAlign_Top)
-						.HAlign(HAlign_Left)
-						[
-							SAssignNew(RightBox, SVerticalBox)
-							.Clipping(EWidgetClipping::ClipToBounds)
-						]
+						SNew(STextBlock)
+						.TextStyle(FShooterStyle::Get(), "ShooterGame.MenuHeaderTextStyle")
+						.ColorAndOpacity(MenuTitleTextColor)
+						.Text(this, &SShooterTabWidget::GetMenuTitle)
 					]
 				]
 			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
+				.ColorAndOpacity(this, &SShooterTabWidget::GetBottomColor)
+				.VAlign(VAlign_Top)
+				.HAlign(HAlign_Left)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SVerticalBox)
+						.Clipping(EWidgetClipping::ClipToBounds)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						//.Padding(TAttribute<FMargin>(this, &SShooterTabWidget::GetLeftMenuOffset))
+						[
+							SNew(SBorder)
+							.BorderImage(&MenuStyle->LeftBackgroundBrush)
+							.BorderBackgroundColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
+							.Padding(FMargin(OutlineWidth))
+							.DesiredSizeScale(this, &SShooterTabWidget::GetBottomScale)
+							.VAlign(VAlign_Top)
+							.HAlign(HAlign_Left)
+							[
+								SAssignNew(LeftBox, SHorizontalBox)
+								.Clipping(EWidgetClipping::ClipToBounds)
+							]
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SVerticalBox)
+						.Clipping(EWidgetClipping::ClipToBounds)
+						+ SVerticalBox::Slot()
+						//.Padding(TAttribute<FMargin>(this, &SShooterTabWidget::GetSubMenuOffset))
+						.AutoHeight()
+						[
+							SNew(SBorder)
+							.BorderImage(&MenuStyle->RightBackgroundBrush)
+							.BorderBackgroundColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
+							.Padding(FMargin(OutlineWidth))
+							.DesiredSizeScale(this, &SShooterTabWidget::GetBottomScale)
+							.VAlign(VAlign_Top)
+							.HAlign(HAlign_Left)
+							[
+								SAssignNew(RightBox, SVerticalBox)
+								.Clipping(EWidgetClipping::ClipToBounds)
+							]
+						]
+					]
+				]
+			]
+			]
 		]
-		]
-		]
-		];
+	];
 }
 
 EVisibility SShooterTabWidget::GetSlateVisibility() const
@@ -415,7 +415,7 @@ void SShooterTabWidget::BuildLeftPanel(bool bInGoingBack)
 		if (CurrentMenu[i]->bVisible)
 		{
 			TSharedPtr<SWidget> TmpWidget;
-			if (CurrentMenu[i]->MenuItemType == EShooterTabItemType::Standard)
+			if (CurrentMenu[i]->MenuItemType == EShooterMenuItemType::Standard)
 			{
 				TmpWidget = SAssignNew(CurrentMenu[i]->Widget, SShooterTabItem)
 					.PlayerOwner(PlayerOwner)
@@ -423,7 +423,7 @@ void SShooterTabWidget::BuildLeftPanel(bool bInGoingBack)
 					.Text(CurrentMenu[i]->GetText())
 					.bIsMultichoice(false);
 			}
-			else if (CurrentMenu[i]->MenuItemType == EShooterTabItemType::MultiChoice)
+			else if (CurrentMenu[i]->MenuItemType == EShooterMenuItemType::MultiChoice)
 			{
 				TmpWidget = SAssignNew(CurrentMenu[i]->Widget, SShooterTabItem)
 					.PlayerOwner(PlayerOwner)
@@ -434,7 +434,7 @@ void SShooterTabWidget::BuildLeftPanel(bool bInGoingBack)
 					.OptionText(this, &SShooterTabWidget::GetOptionText, CurrentMenu[i]);
 				UpdateArrows(CurrentMenu[i]);
 			}
-			else if (CurrentMenu[i]->MenuItemType == EShooterTabItemType::CustomWidget)
+			else if (CurrentMenu[i]->MenuItemType == EShooterMenuItemType::CustomWidget)
 			{
 				TmpWidget = CurrentMenu[i]->CustomWidget;
 			}
@@ -455,7 +455,7 @@ void SShooterTabWidget::BuildLeftPanel(bool bInGoingBack)
 
 
 	TSharedPtr<FShooterTabItem> FirstMenuItem = CurrentMenu.IsValidIndex(SelectedIndex) ? CurrentMenu[SelectedIndex] : NULL;
-	if (FirstMenuItem.IsValid() && FirstMenuItem->MenuItemType != EShooterTabItemType::CustomWidget)
+	if (FirstMenuItem.IsValid() && FirstMenuItem->MenuItemType != EShooterMenuItemType::CustomWidget)
 	{
 		FirstMenuItem->Widget->SetMenuItemActive(true);
 		FSlateApplication::Get().SetKeyboardFocus(SharedThis(this));
@@ -484,7 +484,7 @@ void SShooterTabWidget::BuildRightPanel()
 		{
 			TSharedPtr<SShooterTabItem> TmpButton;
 			//Custom menu items are not supported in the right panel
-			if (NextMenu[i]->MenuItemType == EShooterTabItemType::Standard)
+			if (NextMenu[i]->MenuItemType == EShooterMenuItemType::Standard)
 			{
 				TmpButton = SAssignNew(NextMenu[i]->Widget, SShooterTabItem)
 					.PlayerOwner(PlayerOwner)
@@ -492,7 +492,7 @@ void SShooterTabWidget::BuildRightPanel()
 					.InactiveTextAlpha(0.3f)
 					.bIsMultichoice(false);
 			}
-			else if (NextMenu[i]->MenuItemType == EShooterTabItemType::MultiChoice)
+			else if (NextMenu[i]->MenuItemType == EShooterMenuItemType::MultiChoice)
 			{
 				TmpButton = SAssignNew(NextMenu[i]->Widget, SShooterTabItem)
 					.PlayerOwner(PlayerOwner)
@@ -691,7 +691,7 @@ void SShooterTabWidget::Tick(const FGeometry& AllottedGeometry, const double InC
 					LeftMenuWidgetAnimation.Play(this->AsShared());
 				}
 				//Focus the custom widget
-				if (CurrentMenu.Num() == 1 && CurrentMenu.Top()->MenuItemType == EShooterTabItemType::CustomWidget)
+				if (CurrentMenu.Num() == 1 && CurrentMenu.Top()->MenuItemType == EShooterMenuItemType::CustomWidget)
 				{
 					FSlateApplication::Get().SetKeyboardFocus(CurrentMenu.Top()->CustomWidget);
 				}
@@ -833,7 +833,7 @@ void SShooterTabWidget::ChangeOption(int32 MoveBy)
 	const int32 MaxIndex = MenuItem->MaxMultiChoiceIndex > -1 ? MenuItem->MaxMultiChoiceIndex : MenuItem->MultiChoice.Num() - 1;
 	const int32 CurIndex = MenuItem->SelectedMultiChoice;
 
-	if (MenuItem->MenuItemType == EShooterTabItemType::MultiChoice)
+	if (MenuItem->MenuItemType == EShooterMenuItemType::MultiChoice)
 	{
 		if (CurIndex + MoveBy >= MinIndex && CurIndex + MoveBy <= MaxIndex)
 		{
@@ -943,7 +943,7 @@ FReply SShooterTabWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent
 FReply SShooterTabWidget::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
 {
 	//Focus the custom widget
-	if (CurrentMenu.Num() == 1 && CurrentMenu.Top()->MenuItemType == EShooterTabItemType::CustomWidget)
+	if (CurrentMenu.Num() == 1 && CurrentMenu.Top()->MenuItemType == EShooterMenuItemType::CustomWidget)
 	{
 		return FReply::Handled().SetUserFocus(CurrentMenu.Top()->CustomWidget.ToSharedRef(), EFocusCause::SetDirectly);
 	}

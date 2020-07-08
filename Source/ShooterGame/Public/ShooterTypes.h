@@ -1,6 +1,7 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
 
 #include "UObject/PrimaryAssetId.h"
+#include "Brushes/SlateDynamicImageBrush.h"
 #include "ShooterTypes.generated.h"
 
 #pragma once
@@ -47,8 +48,9 @@ UENUM(BlueprintType)
 enum class EShooterWeaponType : uint8
 {
 	None UMETA(DisplayName = "无"),
-	Margic UMETA(DisplayName = "法杖"),
+	Wand UMETA(DisplayName = "法杖"),
 	Sword UMETA(DisplayName = "剑"),
+	Axe UMETA(DisplayName = "斧"),
 	Gun UMETA(DisplayName = "枪械")
 };
 
@@ -71,6 +73,18 @@ enum class EPawnState : uint8
 	Equipping UMETA(DisplayName = "切换武器")
 };
 */
+
+/** Defines categories for Game sources. */
+UENUM()
+enum class EShooterSourceCategory : uint8
+{
+	Token UMETA(DisplayName = "货币"),
+	Skill UMETA(DisplayName = "技能"),
+	Potion UMETA(DisplayName = "药品"),
+	Equipment UMETA(DisplayName = "装备"),
+	Unknown
+};
+
 
 /** keep in sync with ShooterImpactEffect */
 UENUM()
@@ -132,6 +146,21 @@ namespace EShooterCustomWidget
 #define SHOOTER_SURFACE_Grass		SurfaceType6
 #define SHOOTER_SURFACE_Glass		SurfaceType7
 #define SHOOTER_SURFACE_Flesh		SurfaceType8
+
+
+struct FShooterImageBrush : public FSlateDynamicImageBrush, public FGCObject
+{
+	FShooterImageBrush(const FName InTextureName, const FVector2D& InImageSize)
+		: FSlateDynamicImageBrush(InTextureName, InImageSize)
+	{
+		SetResourceObject(LoadObject<UObject>(NULL, *InTextureName.ToString()));
+	}
+
+	virtual void AddReferencedObjects(FReferenceCollector& Collector)
+	{
+		FSlateBrush::AddReferencedObjects(Collector);
+	}
+};
 
 USTRUCT(BlueprintType)
 struct FPlayerAnim
@@ -246,8 +275,8 @@ struct SHOOTERGAME_API FShooterItemSlot
 {
 	GENERATED_BODY()
 
-		/** Constructor, -1 means an invalid slot */
-		FShooterItemSlot()
+	/** Constructor, -1 means an invalid slot */
+	FShooterItemSlot()
 		: SlotNumber(-1)
 	{}
 
@@ -298,7 +327,7 @@ struct SHOOTERGAME_API FShooterItemData
 	GENERATED_BODY()
 
 		/** Constructor, default to count/level 1 so declaring them in blueprints gives you the expected behavior */
-		FShooterItemData()
+	FShooterItemData()
 		: ItemCount(1)
 		, ItemLevel(1)
 	{}

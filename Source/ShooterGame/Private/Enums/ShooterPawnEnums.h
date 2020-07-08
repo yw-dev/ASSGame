@@ -18,7 +18,7 @@ enum class EShooterRaceType : uint8
 };
 
 UENUM(BlueprintType)
-enum class EShooterCompType : uint8
+enum class EShooterCampType : uint8
 {
 	ENeutral		UMETA(DisplayName = "中立"),
 	EHostile		UMETA(DisplayName = "敌对"),

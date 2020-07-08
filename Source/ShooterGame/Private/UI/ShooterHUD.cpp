@@ -4,6 +4,9 @@
 #include "UI/ShooterHUD.h"
 #include "SShooterScoreboardWidget.h"
 #include "SChatWidget.h"
+#include "Player/SShooterPlayerWidget.h"
+#include "Map/SShooterMapWidget.h"
+#include "Store/SShooterStoreWidget.h"
 #include "Engine/ViewportSplitScreen.h"
 #include "ShooterAssetManager.h"
 #include "Weapons/ShooterWeapon.h"
@@ -570,7 +573,6 @@ void AShooterHUD::DrawHUD()
 					NetModeDesc += Session->SessionInfo->GetSessionId().ToString();
 				}
 			}
-
 		}
 
 		NetModeDesc += FString::Printf( TEXT( "\nVersion: %i, %s, %s" ), FNetworkVersion::GetNetworkCompatibleChangelist(), UTF8_TO_TCHAR(__DATE__), UTF8_TO_TCHAR(__TIME__) );
@@ -590,8 +592,8 @@ void AShooterHUD::DrawHUD()
 		}
 		if (MyPawn && MyPawn->IsAlive())
 		{
-			DrawHealth();
-			DrawWeaponHUD();
+			//DrawHealth();
+			//DrawWeaponHUD();
 		}
 		else
 		{
@@ -633,8 +635,9 @@ void AShooterHUD::DrawHUD()
 	}
 
 	// Render the info messages such as wating to respawn - these will be drawn below any 'killed player' message.
-	ShowInfoItems(MessageOffset, 1.0f);
-	
+	ShowInfoItems(MessageOffset, 1.0f); 
+	ShowPlayerboard();
+	ShowMapboard();
 }
 
 void AShooterHUD::DrawDebugInfoString(const FString& Text, float PosX, float PosY, bool bAlignLeft, bool bAlignTop, const FColor& TextColor)
@@ -770,7 +773,7 @@ void AShooterHUD::DrawDeathMessages()
 	float DeathMsgsPosY = Canvas->ClipY - (OffsetY + DeathMessagesBg.VL) * ScaleUI;
 	FVector Scale(ScaleUI, ScaleUI, 0.f);
 	// hardcoded value to make sure the box is big enough to hold 16 W's for both players' names
-	Scale.X *= 1.85;
+	Scale.X *= 1.5;
 	Canvas->DrawScaledIcon(DeathMessagesBg, DeathMsgsPosX, DeathMsgsPosY, Scale);
 
 	const FColor BlueTeamColor = FColor(70, 70, 152, 255);
@@ -971,6 +974,8 @@ void AShooterHUD::PostInitializeComponents()
 
 	bIsScoreBoardVisible = false;
 
+	bIsStoreBoardVisible = false;
+
 	IOnlineSubsystem* const OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
@@ -1054,6 +1059,117 @@ bool AShooterHUD::ShowScoreboard(bool bEnable, bool bFocus)
 		}
 		
 		if( bFocus )
+		{
+			// Make sure viewport has focus
+			FSlateApplication::Get().SetAllUserFocusToGameViewport();
+		}
+	}
+	return true;
+}
+
+void AShooterHUD::ToggleStoreboard()
+{
+	ShowStoreboard(!bIsStoreBoardVisible);
+}
+
+void AShooterHUD::ShowPlayerboard()
+{
+	SAssignNew(PlayerboardOverlay, SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(EHorizontalAlignment::HAlign_Center)
+		.VAlign(EVerticalAlignment::VAlign_Bottom)
+		[
+			SAssignNew(PlayerboardWidget, SShooterPlayerWidget)
+			.Cursor(EMouseCursor::Default)
+			.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
+			.MatchState(GetMatchState())
+		];
+
+	GEngine->GameViewport->AddViewportWidgetContent(
+		SAssignNew(PlayerboardContainer, SWeakWidget)
+		.PossiblyNullContent(PlayerboardOverlay));
+
+}
+
+void AShooterHUD::ShowMapboard()
+{
+	SAssignNew(MapboardOverlay, SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(EHorizontalAlignment::HAlign_Right)
+		.VAlign(EVerticalAlignment::VAlign_Bottom)
+		[
+			SAssignNew(MapboardWidget, SShooterMapWidget)
+			.Cursor(EMouseCursor::Default)
+			.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
+			.MatchState(GetMatchState())
+		];
+
+	GEngine->GameViewport->AddViewportWidgetContent(
+		SAssignNew(MapboardContainer, SWeakWidget)
+		.PossiblyNullContent(MapboardOverlay));
+
+}
+
+bool AShooterHUD::ShowStoreboard(bool bEnable, bool bFocus)
+{
+	if (bIsStoreBoardVisible == bEnable)
+	{
+		// if the scoreboard is already enabled, disable it in favour of the new request
+		if (bEnable)
+		{
+			ToggleScoreboard();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if (bEnable)
+	{
+		AShooterPlayerController* ShooterPC = Cast<AShooterPlayerController>(PlayerOwner);
+		if (ShooterPC == NULL || ShooterPC->IsGameMenuVisible())
+		{
+			return false;
+		}
+	}
+
+	bIsStoreBoardVisible = bEnable;
+	if (bIsStoreBoardVisible)
+	{
+		SAssignNew(StoreboardWidgetOverlay, SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Center)
+			.VAlign(EVerticalAlignment::VAlign_Center)
+			.Padding(FMargin(50))
+			[
+				SAssignNew(StoreboardWidget, SShooterStoreWidget)
+				.Cursor(EMouseCursor::Default)
+				.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
+				.MatchState(GetMatchState())
+			];
+
+		GEngine->GameViewport->AddViewportWidgetContent(
+			SAssignNew(StoreboardWidgetContainer, SWeakWidget)
+			.PossiblyNullContent(StoreboardWidgetOverlay));
+
+		if (bFocus)
+		{
+			// Give input focus to the scoreboard
+			FSlateApplication::Get().SetKeyboardFocus(StoreboardWidget);
+		}
+	}
+	else
+	{
+		if (StoreboardWidgetContainer.IsValid())
+		{
+			if (GEngine && GEngine->GameViewport)
+			{
+				GEngine->GameViewport->RemoveViewportWidgetContent(StoreboardWidgetContainer.ToSharedRef());
+			}
+		}
+
+		if (bFocus)
 		{
 			// Make sure viewport has focus
 			FSlateApplication::Get().SetAllUserFocusToGameViewport();

@@ -3,84 +3,72 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ShooterTypes.h"
 #include "Misc/TextFilter.h"
+#include "IShooterSource.h"
+#include "ShooterSourceModel.h"
 #include "Brushes/SlateDynamicImageBrush.h"
 
-/*
-struct FShooterImageBrush : public FSlateDynamicImageBrush, public FGCObject
-{
-	FShooterImageBrush(const FName InTextureName, const FVector2D& InImageSize)
-		: FSlateDynamicImageBrush(InTextureName, InImageSize)
-	{
-		SetResourceObject(LoadObject<UObject>(NULL, *InTextureName.ToString()));
-	}
 
-	virtual void AddReferencedObjects(FReferenceCollector& Collector)
-	{
-		FSlateBrush::AddReferencedObjects(Collector);
-	}
-};*/
+typedef TSharedPtr<class FShooterWidgetItem> FShooterWidgetItemPtr;
 
-typedef TSharedPtr<class FShooterPawnItem> FShooterPawnItemPtr;
 /**
  * The Data for a single node in the Directory Tree
  */
-class FShooterPawnItem
+class FShooterWidgetItem
 {
 
 public:
 
 	/** @return Returns the parent or NULL if this is a root */
-	const FShooterPawnItemPtr GetParentCategory() const
+	const FShooterWidgetItemPtr GetParentCategory() const
 	{
 		return ParentElement.Pin();
 	}
 
 	/** @return the path on hard disk, read-only */
-	const FString& GetDirectoryPath() const
+	const FString GetDirectoryPath() const
 	{
 		return DirectoryPath;
 	}
 
 	/** @return name to Categoty in file tree view! read-only */
-	const FString& GetName() const
+	const FString GetName() const
 	{
 		return Name;
 	}
 
 	/** @return Description to Categoty in file tree view! read-only */
-	const FString& GetDescrip() const
+	const FString GetDescrip() const
 	{
 		return Descrip;
 	}
 
 	/** @return name to Categoty in file tree view! read-only */
-	const FSlateBrush& GetIcon() const
+	const TSharedPtr<FSlateBrush> GetIconBrush() const
 	{
-		return Icon;
+		return IconBrush;
 	}
 
 	/** @return name to Categoty in file tree view! read-only */
-	const FString& GetPawn() const
+	const FString GetPawn() const
 	{
 		return Pawn;
 	}
 
 	/** @return Returns all subdirectories, read-only */
-	const TArray<FShooterPawnItemPtr>& GetSubDirectories() const
+	const TArray<FShooterWidgetItemPtr> GetSubDirectories() const
 	{
 		return SubDirectories;
 	}
 
 	/** @return Returns all subdirectories, read or write */
-	TArray<FShooterPawnItemPtr> AccessSubDirectories()
+	TArray<FShooterWidgetItemPtr> AccessSubDirectories()
 	{
 		return SubDirectories;
 	}
 
 	/** Add a subdirectory to this node in the tree! */
-	void AddSubDirectory(const FShooterPawnItemPtr NewSubDir)
+	void AddSubDirectory(const FShooterWidgetItemPtr NewSubDir)
 	{
 		SubDirectories.Add(NewSubDir);
 	}
@@ -88,17 +76,17 @@ public:
 public:
 
 	/** Constructor for FShooterPawnItem */
-	FShooterPawnItem(const FShooterPawnItemPtr IN_ParentElement, 
-		const FString& IN_DirectoryPath, 
-		const FString& IN_Name, 
-		const FSlateBrush& IN_Icon, 
-		const FString& IN_Descrip, 
-		const FString& IN_Pawn = ""
+	FShooterWidgetItem(FShooterWidgetItemPtr IN_ParentElement,
+		FString IN_DirectoryPath,
+		FString IN_Name,
+		TSharedPtr<FSlateBrush> IN_IconBrush,
+		FString IN_Descrip,
+		FString IN_Pawn = ""
 	)
 		: ParentElement(IN_ParentElement)
 		, DirectoryPath(IN_DirectoryPath)
 		, Name(IN_Name)
-		, Icon(IN_Icon)
+		, IconBrush(IN_IconBrush)
 		, Descrip(IN_Descrip)
 		, Pawn(IN_Pawn)
 	{
@@ -106,9 +94,8 @@ public:
 
 
 private:
-
 	/** Parent item or NULL if this is a root  */
-	TWeakPtr<FShooterPawnItem> ParentElement;
+	TWeakPtr<FShooterWidgetItem> ParentElement;
 
 	/** Full path of this directory in the tree */
 	FString DirectoryPath;
@@ -116,7 +103,7 @@ private:
 	/** Categoty name of the category */
 	FString Name;
 
-	FSlateBrush Icon;
+	TSharedPtr<FSlateBrush> IconBrush;
 
 	//FString CategotyIconPath;
 
@@ -125,42 +112,43 @@ private:
 	FString Pawn;
 
 	/** Child categories */
-	TArray<FShooterPawnItemPtr> SubDirectories;
+	TArray<FShooterWidgetItemPtr> SubDirectories;
 };
 
-class FShooterPawnSourceViewModel : public TSharedFromThis<FShooterPawnSourceViewModel>
+class FShooterStoreViewModel : public TSharedFromThis<FShooterStoreViewModel>
 {
+
 public:
 	DECLARE_DELEGATE(FOnViewSourceChanged)
 	DECLARE_DELEGATE(FOnCategoriesChanged)
 	DECLARE_DELEGATE(FOnContentSourcesChanged);
 	DECLARE_DELEGATE(FOnSelectedContentSourceChanged);
 
-	typedef TTextFilter<FShooterPawnItemPtr> ContentSourceTextFilter;
+	typedef TTextFilter<FShooterWidgetItemPtr> ContentSourceTextFilter;
 
 	/** Creates a shared reference to a new view model. */
-	static TSharedRef<FShooterPawnSourceViewModel> CreateShared();
+	static TSharedRef<FShooterStoreViewModel> CreateShared();
 
 	/** Sets the currently selected category view model. Only content sources which match the selected
 		category will be returned by GetContentSources(). */
-	void SetSelectedCategory(FShooterPawnItemPtr SelectedCategoryIn);
+	void SetSelectedCategory(FShooterWidgetItemPtr SelectedCategoryIn);
 
 	/** Sets the currently selected content source. */
-	void SetSelectedContent(FShooterPawnItemPtr SelectedContentSourceIn);
+	void SetSelectedContent(FShooterWidgetItemPtr SelectedContentSourceIn);
 
 	/** Gets the view models for the current set of content source categories. */
-	const TArray<FShooterPawnItemPtr>* GetCategories();
+	const TArray<FShooterWidgetItemPtr>* GetCategories();
 
 	/** Gets a filtered array of content sources which match both the selected category and the search
 		text if it has been set. */
-	const TArray<FShooterPawnItemPtr>* GetContentSources();
+	const TArray<FShooterWidgetItemPtr>* GetContentSources();
 
 	/** Gets the view model for the currently selected category.  Only content sources which match
 		the selected category will be returned by GetSelectedCategory(). */
-	FShooterPawnItemPtr GetSelectedCategory();
+	FShooterWidgetItemPtr GetSelectedCategory();
 
 	/** Gets the currently selected content source. */
-	FShooterPawnItemPtr GetSelectedContent();
+	FShooterWidgetItemPtr GetSelectedContent();
 
 	/** Sets the delegate which should be executed when the set of categories changes. */
 	void SetOnViewSourceChanged(FOnViewSourceChanged OnViewSourceChangedIn);
@@ -178,7 +166,7 @@ public:
 
 private:
 
-	FShooterPawnSourceViewModel();
+	FShooterStoreViewModel();
 
 	void Initialize();
 
@@ -190,7 +178,7 @@ private:
 	void UpdateFilteredContentSourcesAndSelection(bool bAllowEmptySelection);
 
 	/** Converts a content source item to an array of strings for processing by the TTextFilter. */
-	void TransformContentSourceToStrings(FShooterPawnItemPtr Item, OUT TArray< FString >& Array);
+	void TransformContentSourceToStrings(FShooterWidgetItemPtr Item, OUT TArray< FString >& Array);
 
 	/** Handles notification from the content source providers when their content source arrays change. */
 	void ContentSourcesChanged();
@@ -198,23 +186,23 @@ private:
 private:
 
 	/** The Core Data for the Tree Viewer! */
-	TArray<FShooterPawnItemPtr> Categories;
+	TArray<FShooterWidgetItemPtr> Categories;
 
-	//FShooterPawnItemPtr CurrentCategory;
+	//FShooterWidgetItemPtr CurrentCategory;
 
 	/** The view model for the currently selected category. */
-	FShooterPawnItemPtr SelectedCategory;
+	FShooterWidgetItemPtr SelectedCategory;
 
 	/** The Core Data for the Tree Viewer! */
-	//TArray<FShooterPawnItemPtr> ContentSource;
+	//TArray<FShooterWidgetItemPtr> ContentSource;
 
-	//FShooterPawnItemPtr CurrentContent;
+	//FShooterWidgetItemPtr CurrentContent;
 
 	/** The view model for the currently selected Content Pawn. */
-	FShooterPawnItemPtr SelectedContent;
+	FShooterWidgetItemPtr SelectedContent;
 
 	/** The Core Data for the Tree Viewer! */
-	TArray<FShooterPawnItemPtr> FilteredContentSource;
+	TArray<FShooterWidgetItemPtr> FilteredContentSource;
 
 	/** The delegate which is executed when the available ViewSource change. */
 	FOnViewSourceChanged OnViewSourceChanged;
@@ -232,4 +220,14 @@ private:
 	TSharedPtr<ContentSourceTextFilter> ContentSourceFilter;
 
 
+
+
+
 };
+
+
+
+
+
+
+

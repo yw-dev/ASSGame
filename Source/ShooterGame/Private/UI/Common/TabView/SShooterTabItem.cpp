@@ -27,8 +27,8 @@ void SShooterTabItem::Construct(const FArguments& InArgs)
 	TextColor = FLinearColor(FColor(155, 164, 182));
 
 	ChildSlot
-	.VAlign(VAlign_Fill)
-	.HAlign(HAlign_Fill)
+	.VAlign(VAlign_Center)
+	.HAlign(HAlign_Center)
 	[
 		SNew(SOverlay)
 		+ SOverlay::Slot()

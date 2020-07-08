@@ -2,26 +2,31 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "EngineMinimal.h"
+#include "SlateBasics.h"
+#include "SlateExtras.h"
 #include "Slate.h"
+#include "ShooterTypes.h"
 #include "ShooterMenuHUD.h"
 #include "ShooterGameInstance.h"
-#include "ViewModel/ShooterPawnSourceViewModel.h"
+#include "ViewModel/ShooterStoreViewModel.h"
+
+typedef STileView<FShooterWidgetItemPtr> SShooterStoreTileView;
 
 // Lays out and controls the HUD UI.
-
-typedef STileView<FShooterPawnItemPtr> SShooterTileView;
-
-class SShooterPawnGuideWidget : public SCompoundWidget
+class SShooterStoreWidget : public SCompoundWidget
 {
-	SLATE_BEGIN_ARGS(SShooterPawnGuideWidget)
+
+	SLATE_BEGIN_ARGS(SShooterStoreWidget)
 	{
 	}
 
 	//SLATE_ARGUMENT(TWeakObjectPtr<class AShooterMenuHUD>, OwnerHUD);
-	SLATE_ARGUMENT(TWeakObjectPtr<ULocalPlayer>, PlayerOwner)
+	SLATE_ARGUMENT(TWeakObjectPtr<APlayerController>, PlayerOwner)
 
 	SLATE_ARGUMENT(TSharedPtr<SWidget>, OwnerWidget)
+
+	SLATE_ATTRIBUTE(EShooterMatchState::Type, MatchState)
 
 	SLATE_END_ARGS()
 
@@ -42,13 +47,7 @@ public:
 	void Construct(const FArguments& args);
 
 	/** Destructor */
-	~SShooterPawnGuideWidget();
-
-	/** Returns the player that owns the main menu. */
-	ULocalPlayer* GetPlayerOwner() const;
-
-	/** Returns the controller id of player that owns the main menu. */
-	int32 GetPlayerOwnerControllerId() const;
+	~SShooterStoreWidget();
 
 private:
 	/** Handles the available categories changing on the view model. */
@@ -60,7 +59,7 @@ private:
 	/** Handles the selected content source changing on the view model. */
 	void SelectedContentSourceChanged();
 
-	void SpawnPawnActor(FShooterPawnItemPtr Item);
+	void SpawnPawnActor(FShooterWidgetItemPtr Item);
 
 	/** Hosts a game, using the passed in game type */
 	void HostGame(const FString& GameType);
@@ -87,13 +86,25 @@ protected:
 	TWeakObjectPtr<UShooterGameInstance> GameInstance;
 
 	/** Owning player */
-	TWeakObjectPtr<ULocalPlayer> PlayerOwner;
+	TWeakObjectPtr<class APlayerController> PlayerOwner;
 
 	/** pointer to our parent widget */
 	TSharedPtr<class SWidget> OwnerWidget;
 
+	/** get state of current match */
+	EShooterMatchState::Type MatchState;
+
 	/** style for the menu widget */
 	const struct FShooterMenuStyle *MenuStyle;
+
+	/** menu header height */
+	float MenuHeaderHeight;
+
+	/** menu header height */
+	float StoreViewHeight;
+
+	/** menu header height */
+	float StoreViewWidth;
 
 	/** lan game? */
 	bool bIsLanMatch;
@@ -107,27 +118,26 @@ protected:
 private:
 
 	/** The view model which represents the current data of the UI. */
-	TSharedPtr<FShooterPawnSourceViewModel> ViewModel;
+	TSharedPtr<FShooterStoreViewModel> ViewModel;
 
 	/** The tile view of the category List. */
-	TSharedPtr<SShooterTileView> CategoryTileView;
+	TSharedPtr<SShooterStoreTileView> CategoryTileView;
 
 	/** The tile view of the category List. */
-	TSharedPtr<SShooterTileView> ContentTileView;
+	TSharedPtr<SShooterStoreTileView> ContentTileView;
 
 	/** The placeholder widget which holds the detail view for the currently selected content source. */
 	TSharedPtr<SBox> ContentDetailView;
 
 	/** The Core Data for the Tree Viewer! */
-	TArray<FShooterPawnItemPtr> Categories;
+	TArray<FShooterWidgetItemPtr> Categories;
 
-	FShooterPawnItemPtr CurrentCategory;
+	FShooterWidgetItemPtr CurrentCategory;
 
 	/** The Core Data for the Tree Viewer! */
-	TArray<FShooterPawnItemPtr> ContentSource;
+	TArray<FShooterWidgetItemPtr> ContentSource;
 
-	FShooterPawnItemPtr CurrentContent;
-
+	FShooterWidgetItemPtr CurrentContent;
 
 	/**
 	 * Stores a weak reference to the HUD owning this widget.
@@ -137,10 +147,10 @@ private:
 	/**
 	 * A reference to the Slate Style used for this HUD's widgets.
 	 **/
-	//const struct FGlobalStyle* HUDStyle;
-	/**
-	 * Attribute storing the binding for the player's score.
-	 **/
+	 //const struct FGlobalStyle* HUDStyle;
+	 /**
+	  * Attribute storing the binding for the player's score.
+	  **/
 	TAttribute<FText> Score;
 
 	/**
@@ -152,6 +162,16 @@ private:
 	 * Attribute storing the binding for the Pawn's preview point.
 	 **/
 	TAttribute<AActor*> PreviewActor;
+
+	/**
+	 * Attribute storing the binding for the Pawn's preview List.
+	 **/
+	TAttribute<TArray<AActor*>> PreviewActors;
+
+	/**
+	 * Attribute storing the binding for the player's health.
+	 **/
+	//TAttribute<FShooterStoreViewModel> StoreViewModel;
 
 	/**
 	 * Our Score will be bound to this function, which will retrieve the appropriate data and convert it into an FText.
@@ -166,11 +186,11 @@ private:
 	/**
 	 * Our Health will be bound to this function, which will retrieve the appropriate data and convert it into an FText.
 	 **/
-	//AActor* GetPreviewPoint() const;
+	 //AActor* GetPreviewPoint() const;
 
 	void LoadActorResCallBack();
 
-	void SetContentSource(TArray<FShooterPawnItemPtr> InContentSource);
+	void SetContentSource(TArray<FShooterWidgetItemPtr> InContentSource);
 
 	/** Create Pawn Category List View. **/
 	TSharedRef<SWidget> CreateCategoryTileView();
@@ -179,19 +199,19 @@ private:
 	TSharedRef<SWidget> CreateContentTileView();
 
 	/** Creates a widget representing detailed information about a single content source. */
-	TSharedRef<SWidget> CreateContentSourceDetail(FShooterPawnItemPtr ContentItem);
+	TSharedRef<SWidget> CreateContentSourceDetail(FShooterWidgetItemPtr ContentItem);
 
 	/** Called to generate a widget for the specified Tile item */
-	TSharedRef<ITableRow> Category_OnGenerateTile(FShooterPawnItemPtr Item, const TSharedRef<STableViewBase>& OwnerTable);
-	
+	TSharedRef<ITableRow> Category_OnGenerateTile(FShooterWidgetItemPtr Item, const TSharedRef<STableViewBase>& OwnerTable);
+
 	/** Given a Tile item, fills an array of child items */
-	void Category_OnSelectionChanged(FShooterPawnItemPtr SelectedCategory, ESelectInfo::Type SelectInfo);
+	void Category_OnSelectionChanged(FShooterWidgetItemPtr SelectedCategory, ESelectInfo::Type SelectInfo);
 
 	/** Called to generate a widget for the specified Tile item */
-	TSharedRef<ITableRow> Content_OnGenerateTile(FShooterPawnItemPtr Item, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> Content_OnGenerateTile(FShooterWidgetItemPtr Item, const TSharedRef<STableViewBase>& OwnerTable);
 
 	/** Given a Tile item, fills an array of child items */
-	void Content_OnSelectionChanged(FShooterPawnItemPtr SelectedCategory, ESelectInfo::Type SelectInfo);
+	void Content_OnSelectionChanged(FShooterWidgetItemPtr SelectedCategory, ESelectInfo::Type SelectInfo);
 
 	/** SWidget overrides */
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
@@ -199,5 +219,5 @@ private:
 	/** Handles the add content to project button being clicked. */
 	FReply AddButtonClicked();
 
-
+	
 };

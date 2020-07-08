@@ -199,9 +199,10 @@ void UShooterGameInstance::InitializeDataSource()
 	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("InitializeDataSource()")));
 	//ItemSlotsPerType.Add(FPrimaryAssetType(TEXT("Token")), 1);
 	ItemSlotsPerType.Add(UShooterAssetManager::SkillItemType, 1);
-	ItemSlotsPerType.Add(UShooterAssetManager::PotionItemType, 1);
-	ItemSlotsPerType.Add(UShooterAssetManager::WeaponItemType, 2);
+	ItemSlotsPerType.Add(UShooterAssetManager::PotionItemType, 2);
+	ItemSlotsPerType.Add(UShooterAssetManager::WeaponItemType, 3);
 	ItemSlotsPerType.Add(UShooterAssetManager::PawnItemType, 4);
+	ItemSlotsPerType.Add(UShooterAssetManager::ArmorItemType, 5);
 
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("ItemSlotsPerType::%d"), ItemSlotsPerType.Num()));
 

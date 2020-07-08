@@ -91,6 +91,9 @@ public:
 	/** Toggles scoreboard */
 	void OnToggleScoreboard();
 
+	/** Toggles scoreboard */
+	void OnToggleStoreboard();
+
 	/** shows scoreboard */
 	void OnShowScoreboard();
 

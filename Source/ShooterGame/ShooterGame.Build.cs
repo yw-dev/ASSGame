@@ -14,7 +14,8 @@ public class ShooterGame : ModuleRules
                 "ShooterGame/Private/Items",
                 "ShooterGame/Private/Abilities",
                 "ShooterGame/Private/UI",
-				"ShooterGame/Private/UI/Menu",
+                "ShooterGame/Private/UI/Common",
+                "ShooterGame/Private/UI/Menu",
 				"ShooterGame/Private/UI/Style",
 				"ShooterGame/Private/UI/Widgets",
             }

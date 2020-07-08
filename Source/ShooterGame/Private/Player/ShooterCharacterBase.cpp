@@ -526,7 +526,6 @@ bool AShooterCharacterBase::ActivateAbilitiesWithItemSlot(FShooterItemSlot ItemS
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_SimulatedProxy"));
 		break;
 	default:
-
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
 	}

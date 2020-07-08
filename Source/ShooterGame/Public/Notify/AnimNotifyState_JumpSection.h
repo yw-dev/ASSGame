@@ -8,7 +8,7 @@
 
 /**
  *  Anim Montage  Section dispatcher Notify
- *  角色动画片段跳转通知（技能连击动画）
+ *  瑙掕壊鍔ㄧ敾鐗囨璺宠浆閫氱煡锛堟妧鑳借繛鍑诲姩鐢伙級
  */
 UCLASS(editinlinenew, Blueprintable, const, hidecategories = Object, collapsecategories, meta = (ShowWorldContextPin, DisplayName = "ShooterJumpSection"))
 class SHOOTERGAME_API UAnimNotifyState_JumpSection : public UAnimNotifyState
@@ -23,7 +23,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = JumpSection)
 	TArray<FName> JumpSections;
 	
-
 public:
 	UAnimNotifyState_JumpSection();
 

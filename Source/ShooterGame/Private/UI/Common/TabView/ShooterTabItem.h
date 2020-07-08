@@ -4,18 +4,8 @@
 
 #include "SlateBasics.h"
 #include "SlateExtras.h"
+#include "ShooterTypes.h"
 #include "SShooterTabItem.h"
-
-namespace EShooterTabItemType
-{
-	enum Type
-	{
-		Root,
-		Standard,
-		MultiChoice,
-		CustomWidget,
-	};
-};
 
 /** TArray<TSharedPtr<class FShooterTabItem>> */
 typedef TArray< TSharedPtr<class FShooterTabItem>> TabMenuPtr;
@@ -85,13 +75,16 @@ public:
 	FOnOnControllerFacebuttonDownPressed OnControllerFacebuttonDownPressed;
 
 	/** menu item type */
-	EShooterTabItemType::Type MenuItemType;
+	EShooterMenuItemType::Type MenuItemType;
 
 	/** if this menu item will be created when menu is opened */
 	bool bVisible;
 
 	/** sub menu if present */
 	TArray< TSharedPtr<FShooterTabItem> > SubMenu;
+
+	/** shared pointer to actual slate widget representing the custom menu item, ie whole options screen */
+	TArray<TSharedPtr<SWidget>> TabWidget;
 
 	/** shared pointer to actual slate widget representing the menu item */
 	TSharedPtr<SShooterTabItem> Widget;
@@ -116,14 +109,14 @@ public:
 	{
 		bVisible = true;
 		Text = MoveTemp(_text);
-		MenuItemType = EShooterTabItemType::Standard;
+		MenuItemType = EShooterMenuItemType::Standard;
 	}
 
 	/** custom widgets cannot contain sub menus, all functionality must be handled by custom widget itself */
 	FShooterTabItem(TSharedPtr<SWidget> _Widget)
 	{
 		bVisible = true;
-		MenuItemType = EShooterTabItemType::CustomWidget;
+		MenuItemType = EShooterMenuItemType::CustomWidget;
 		CustomWidget = _Widget;
 	}
 
@@ -132,7 +125,7 @@ public:
 	{
 		bVisible = true;
 		Text = MoveTemp(_text);
-		MenuItemType = EShooterTabItemType::MultiChoice;
+		MenuItemType = EShooterMenuItemType::MultiChoice;
 		MultiChoice = MoveTemp(_choices);
 		MinMultiChoiceIndex = MaxMultiChoiceIndex = -1;
 		SelectedMultiChoice = DefaultIndex;
@@ -166,7 +159,7 @@ private:
 	FShooterTabItem()
 	{
 		bVisible = false;
-		MenuItemType = EShooterTabItemType::Root;
+		MenuItemType = EShooterMenuItemType::Root;
 	}
 
 };

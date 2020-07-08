@@ -4,6 +4,7 @@
 #include "SShooterMainViewWidget.h"
 #include "SShooterSessionsWidget.h"
 #include "ShooterStyle.h"
+#include "ShooterMenuSoundsWidgetStyle.h"
 #include "ShooterMenuItemWidgetStyle.h"
 #include "ShooterBlueprintLibrary.h"
 #include "GenericPlatformChunkInstall.h"

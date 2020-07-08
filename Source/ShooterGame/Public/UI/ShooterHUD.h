@@ -101,6 +101,12 @@ public:
 	/** Toggles scoreboard */
 	void ToggleScoreboard();
 
+	/** Show Playerboard */
+	void ShowPlayerboard();
+
+	/** Show Playerboard */
+	void ShowMapboard();
+
 	/** 
 	 * Toggles in game scoreboard.
 	 * Note:Will not display if the game menu is visible.
@@ -110,6 +116,19 @@ public:
 	 * @return	true, if the scoreboard visibility changed
 	 */
 	bool ShowScoreboard(bool bEnable, bool bFocus = false);
+
+	/** Toggles Storeboard */
+	void ToggleStoreboard();
+
+	/**
+	 * Toggles in game storeboard.
+	 * Note:Will not display if the game menu is visible.
+
+	 * @param	bEnable	Required scoreboard display state.
+	 * @param	bFocus	Give keyboard focus to the scoreboard.
+	 * @return	true, if the scoreboard visibility changed
+	 */
+	bool ShowStoreboard(bool bEnable, bool bFocus = false);
 
 	/** 
 	 * Add death message.
@@ -292,6 +311,9 @@ protected:
 	/** Is the scoreboard widget on screen? */
 	uint32 bIsScoreBoardVisible:1;
 
+	/** Is the scoreboard widget on screen? */
+	uint32 bIsStoreBoardVisible : 1;
+
 	/** Scoreboard widget. */
 	TSharedPtr<class SShooterScoreboardWidget>	ScoreboardWidget;
 
@@ -300,6 +322,33 @@ protected:
 
 	/** Scoreboard widget container - used for removing */
 	TSharedPtr<class SWidget> ScoreboardWidgetContainer;
+
+	/** Storeboard widget. */
+	TSharedPtr<class SShooterStoreWidget> StoreboardWidget;
+
+	/** Storeboard widget overlay. */
+	TSharedPtr<class SOverlay> StoreboardWidgetOverlay;
+
+	/** Storeboard widget container - used for removing */
+	TSharedPtr<class SWidget> StoreboardWidgetContainer;
+
+	/** Storeboard widget. */
+	TSharedPtr<class SShooterPlayerWidget> PlayerboardWidget;
+
+	/** Storeboard widget overlay. */
+	TSharedPtr<class SOverlay> PlayerboardOverlay;
+
+	/** Storeboard widget container - used for removing */
+	TSharedPtr<class SWidget> PlayerboardContainer;
+
+	/** Storeboard widget. */
+	TSharedPtr<class SShooterMapWidget> MapboardWidget;
+
+	/** Storeboard widget overlay. */
+	TSharedPtr<class SOverlay> MapboardOverlay;
+
+	/** Storeboard widget container - used for removing */
+	TSharedPtr<class SWidget> MapboardContainer;
 
 	/** Chatbox widget. */
 	TSharedPtr<class SChatWidget> ChatWidget;

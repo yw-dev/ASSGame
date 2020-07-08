@@ -4,8 +4,8 @@
 
 #include "SlateBasics.h"
 #include "SlateExtras.h"
-#include "Widgets/ShooterTabItem.h"
-#include "Widgets/SShooterTabWidget.h"
+#include "Common/TabView/ShooterTabItem.h"
+#include "Common/TabView/SShooterTabWidget.h"
 #include "ShooterOptions.h"
 #include "ShooterFriends.h"
 #include "ShooterRecentlyMet.h"

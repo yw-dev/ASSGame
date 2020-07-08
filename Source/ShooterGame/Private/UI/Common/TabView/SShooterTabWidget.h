@@ -7,7 +7,7 @@
 #include "ShooterTabItem.h"
 
 /**
- * 
+ * TabView 布局控件
  */
 class SShooterTabWidget : public SCompoundWidget
 {

@@ -83,7 +83,8 @@ void AShooterPlayerController::SetupInputComponent()
 
 	// UI input
 	InputComponent->BindAction("InGameMenu", IE_Pressed, this, &AShooterPlayerController::OnToggleInGameMenu);
-	InputComponent->BindAction("ShopMenu", IE_Pressed, this, &AShooterPlayerController::OnToggleShopMenu);
+	//InputComponent->BindAction("ShopMenu", IE_Pressed, this, &AShooterPlayerController::OnToggleShopMenu); 
+	InputComponent->BindAction("ToggleStoreboard", IE_Pressed, this, &AShooterPlayerController::OnToggleStoreboard);
 	InputComponent->BindAction("Scoreboard", IE_Pressed, this, &AShooterPlayerController::OnShowScoreboard);
 	InputComponent->BindAction("Scoreboard", IE_Released, this, &AShooterPlayerController::OnHideScoreboard);
 	InputComponent->BindAction("ConditionalCloseScoreboard", IE_Pressed, this, &AShooterPlayerController::OnConditionalCloseScoreboard);
@@ -637,6 +638,15 @@ void AShooterPlayerController::OnToggleScoreboard()
 	if(ShooterHUD && ( ShooterHUD->IsMatchOver() == false ))
 	{
 		ShooterHUD->ToggleScoreboard();
+	}
+}
+
+void AShooterPlayerController::OnToggleStoreboard()
+{
+	AShooterHUD* ShooterHUD = GetShooterHUD();
+	if (ShooterHUD && (ShooterHUD->IsMatchOver() == false))
+	{
+		ShooterHUD->ToggleStoreboard();
 	}
 }
 

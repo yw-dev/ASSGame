@@ -6,7 +6,7 @@
 #include "SlateExtras.h"
 
 /**
- * 通用Tab选项面板
+ * Tab选项条目控件
  */
 class SShooterTabItem : public SCompoundWidget
 {

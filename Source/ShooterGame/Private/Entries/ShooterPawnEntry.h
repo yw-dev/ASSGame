@@ -8,7 +8,7 @@
 #include "ShooterPawnEntry.generated.h"
 
 /*
-*	Race's Data.(种族Entry)
+*	Pawn's Data.(角色Entry)
 */
 USTRUCT(BlueprintType)
 struct FShooterRaceEntry : public FTableRowBase
@@ -45,8 +45,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = PawnEntry, DisplayName = "PawnName")
 	FName PawnName;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = RaceEntry, DisplayName = "PawnComp")
-	EShooterCompType CompType;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = RaceEntry, DisplayName = "PawnCamp")
+	EShooterCampType CompType;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = PawnEntry, DisplayName = "PawnDescrip")
 	FText PawnDescription;
@@ -75,8 +75,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = RaceEntry, DisplayName = "PawnActor")
 	TAssetSubclassOf<AActor> Pawn;
 
+	/** Icon to display */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = RaceEntry, DisplayName = "PawnPreview")
+	FSlateBrush PawnMesh;
+
 	// /Game/Blueprints/Pawns/HeroA
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = PawnEntry, DisplayName = "PawnActorPath")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = PawnEntry, DisplayName = "PawnPath")
 	FName PawnPath;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = PawnEntry, DisplayName = "PawnBP")

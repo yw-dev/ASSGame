@@ -666,6 +666,5 @@ FText SShooterSessionsWidget::GetScore() const
 }
 
 
-
-#undef LOCTEXT_NAMESPAC
+#undef LOCTEXT_NAMESPACE
 

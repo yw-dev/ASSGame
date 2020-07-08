@@ -22,12 +22,13 @@ public:
 	// Constructor and overrides
 	UShooterAssetManager() {}
 
-	/** Static types for items */
-	static const FPrimaryAssetType	PotionItemType;
-	static const FPrimaryAssetType	SkillItemType;
-	static const FPrimaryAssetType	TokenItemType;
-	static const FPrimaryAssetType	WeaponItemType;
-	static const FPrimaryAssetType	PawnItemType;
+	/** Static types for items */ 
+	static const FPrimaryAssetType	PotionItemType;		// 药品
+	static const FPrimaryAssetType	SkillItemType;		// 技能
+	static const FPrimaryAssetType	TokenItemType;		// 货币
+	static const FPrimaryAssetType	WeaponItemType;		// 武器
+	static const FPrimaryAssetType	PawnItemType;		// 角色
+	static const FPrimaryAssetType	ArmorItemType;		// 护具
 
 	/** Returns the current AssetManager object */
 	static UShooterAssetManager& Get();
