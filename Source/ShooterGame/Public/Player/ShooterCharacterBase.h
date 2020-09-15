@@ -79,6 +79,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual float GetMaxHealth() const;
 
+	/** Returns maximum health, health will never be greater than this */
+	UFUNCTION(BlueprintCallable)
+	virtual float GetRestoreHealth() const;
+
 	/** Returns current mana */
 	UFUNCTION(BlueprintCallable)
 	virtual float GetMana() const;
@@ -86,6 +90,10 @@ public:
 	/** Returns maximum mana, mana will never be greater than this */
 	UFUNCTION(BlueprintCallable)
 	virtual float GetMaxMana() const;
+
+	/** Returns maximum mana, mana will never be greater than this */
+	UFUNCTION(BlueprintCallable)
+	virtual float GetRestoreMana() const;
 
 	/** Returns current movement speed */
 	UFUNCTION(BlueprintCallable)
@@ -103,9 +111,13 @@ public:
 	virtual void OnItemSlotChanged(FShooterItemSlot ItemSlot, UShooterItem* Item);
 
 	/** Called when slotted items change, bound to delegate on interface */
+	UFUNCTION()
 	virtual void OnInventoryItemChanged(UShooterItem* item, bool bAdded);
 
 	virtual void RefreshSlottedGameplayAbilities();
+
+	/** Update the team color of all player meshes. */
+	virtual void UpdateInventoryItems(FShooterItemSlot NewSlot, UShooterItem* NewItem);
 
 	/**
 	 * Attempts to activate any ability in the specified item slot. Will return false if no activatable ability found or activation fails
@@ -206,6 +218,7 @@ protected:
 	TMap<FShooterItemSlot, FGameplayAbilitySpecHandle> SlottedAbilities;
 
 	/** Delegate handles */
+	//FScriptDelegate InventoryUpdateHandle;
 	FDelegateHandle InventoryUpdateHandle;
 	FDelegateHandle InventoryLoadedHandle;
 
@@ -239,7 +252,7 @@ protected:
 	 * @param DamageCauser The actual actor that did the damage, might be a weapon or projectile
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Game|Player")
-	void OnDamaged(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser);
+	void OnDamaged(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser);
 	//void OnDamaged_Implementation(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser);
 
 	/**
@@ -289,7 +302,7 @@ protected:
 	void RemoveSlottedGameplayAbilities(bool bRemoveAll);
 
 	// Called from ShooterAttributeSet, these call BP events above
-	virtual void HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser);
+	virtual void HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser);
 	virtual void HandleHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
 	virtual void HandleManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
 	virtual void HandleMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);

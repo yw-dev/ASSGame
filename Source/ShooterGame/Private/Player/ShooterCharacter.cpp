@@ -41,6 +41,7 @@ FAutoConsoleVariableRef CVarNetEnablePauseRelevancy(
 
 FOnShooterCharacterWeaponChange AShooterCharacter::NotifyWeaponChange;
 FOnShooterCharacterWeaponTypeChange AShooterCharacter::NotifyWeaponTypeChange;
+FOnShooterCharacterPurchaseDelegate AShooterCharacter::NotifyPurchaseChange;
 
 AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UShooterCharacterMovement>(ACharacter::CharacterMovementComponentName))
@@ -109,7 +110,7 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	CharacterLevel = 1;
 	bAbilitiesInitialized = false;
 
-	bEnableComboPeriod = true;
+	bEnableComboPeriod = false;
 
 	TargetingSpeedModifier = 0.5f;
 	bIsTargeting = false;
@@ -192,6 +193,18 @@ void AShooterCharacter::PawnClientRestart()
 	//UMaterialInstanceDynamic* Mesh1PMID = Mesh1P->CreateAndSetMaterialInstanceDynamic(0);
 	UMaterialInstanceDynamic* Mesh1PMID = GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
 	UpdateTeamColors(Mesh1PMID);
+	AShooterPlayerController* PC = Cast<AShooterPlayerController>(GetController());
+	AShooterHUD* HUD = PC->GetShooterHUD();
+	if (HUD)
+	{
+		HUD->ShowPlayerDashboard();
+	}
+	/*
+	if (PC)
+	{
+		//PC->ShowPlayerDashboard();
+		PC->GetPlayerDashboard()->InitWidget();
+	}*/
 }
 
 void AShooterCharacter::OnRep_PlayerState()
@@ -298,6 +311,212 @@ void AShooterCharacter::OnCameraUpdate(const FVector& CameraLocation, const FRot
 	//Mesh1P->SetRelativeLocationAndRotation(PitchedMesh.GetOrigin(), PitchedMesh.Rotator());
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Purchase & Inventory
+/*
+void AShooterCharacter::Purchase(UShooterItem* NewItem)
+{
+	if (HasAuthority())
+	{
+		TakePurchase(NewItem, Controller);
+	}
+}
+
+bool AShooterCharacter::CanPurchase(UShooterItem* NewItem)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Character::CanPurchase()"));
+	if (Role != ROLE_Authority						// not authority
+		|| GetWorld()->GetAuthGameMode<AShooterGameMode>() == NULL
+		|| GetWorld()->GetAuthGameMode<AShooterGameMode>()->GetMatchState() == MatchState::LeavingMap	// level transition occurring
+		|| (Cast<AShooterPlayerState>(PlayerState))->GetNumCoins() < NewItem->Price)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void AShooterCharacter::TakePurchase(UShooterItem* NewItem, class AController* EventInstigator, bool bAdd)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Character::TakePurchase( bAdd = %s)"), bAdd == true ? TEXT("true") : TEXT("false"));
+	if (!NewItem)
+	{
+		return;
+	}
+	AShooterPlayerState* EventPlayerState = EventInstigator ? Cast<AShooterPlayerState>(EventInstigator->PlayerState) : NULL;
+	if (NewItem->ItemType == UShooterAssetManager::TokenItemType)
+	{
+		int32 SoulsCount = EventPlayerState->GetNumCoins();
+		//OnInventorySoulsChangedNative.Broadcast(SoulsCount);
+	}
+	if (bAdd)
+	{
+		AddInventoryItem(NewItem, 1, 1, true);
+
+		if (NewItem->ItemType == UShooterAssetManager::WeaponItemType)
+		{
+			UpdateInventoryActors(NewItem, true);
+		}
+	}
+	else
+	{
+		RemoveInventoryItem(NewItem, 0);
+	}
+}
+
+bool AShooterCharacter::AddInventoryItem(UShooterItem* NewItem, int32 ItemCount, int32 ItemLevel, bool bAutoSlot)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Character::AddInventoryItem()"));
+	bool bChanged = false;
+	if (!NewItem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AddInventoryItem: Failed trying to add null item!"));
+		return false;
+	}
+
+	if (ItemCount <= 0 || ItemLevel <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AddInventoryItem: Failed trying to add item %s with negative count or level!"), *NewItem->GetName());
+		return false;
+	}
+
+	AShooterPlayerState* EventPlayerState = Cast<AShooterPlayerState>(PlayerState);
+	// Find current item data, which may be empty
+	FShooterItemData OldData;
+	EventPlayerState->FindItemData(NewItem, OldData);
+
+	// Find modified data
+	FShooterItemData NewData = OldData;
+	NewData.UpdateItemData(FShooterItemData(ItemCount, ItemLevel), NewItem->MaxCount, NewItem->MaxLevel);
+
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	if (OldData != NewData)
+	{
+		AddItemToSlottedItems(NewData, NewItem);
+		MyPC->NotifyInventoryItemChanged(NewItem, true);
+		bChanged = true;
+	}
+
+	if (bAutoSlot)
+	{
+		// Slot item if required
+		//bChanged |= FillEmptySlotWithItem(NewItem);
+	}
+	if (bChanged)
+	{
+		//if (NewItem->ItemType != UShooterAssetManager::TokenItemType)
+		//{
+		//	AShooterCharacter* pawn = Cast<AShooterCharacter>(GetCharacter());
+		//	pawn->UpdateInventoryActors(NewItem, true);
+		//}
+		// If anything changed, write to save game
+		MyPC->SaveInventory();
+		return true;
+	}
+	return false;
+}
+
+void AShooterCharacter::AddItemToSlottedItems(FShooterItemData NewData, UShooterItem* NewItem)
+{
+	AShooterPlayerState* EventPlayerState = Cast<AShooterPlayerState>(PlayerState);
+	if (EventPlayerState == NULL)
+	{
+		return;
+	}
+	FShooterItemSlot CurrentSlot;
+	if (NewItem->ItemType == UShooterAssetManager::WeaponItemType)
+	{
+		EventPlayerState->AddWeaponItems(NewData, NewItem);
+		CurrentSlot = FShooterItemSlot(NewItem->ItemType, EventPlayerState->GetNumWeaponItems() - 1);
+	}
+	else if (NewItem->ItemType == UShooterAssetManager::SkillItemType)
+	{
+		EventPlayerState->AddSkillItems(NewData, NewItem);
+		CurrentSlot = FShooterItemSlot(NewItem->ItemType, EventPlayerState->GetNumSkillItems() - 1);
+	}
+	else
+	{
+		// If data changed, need to update storage and call callback
+		EventPlayerState->AddInventoryItems(NewData, NewItem);
+		//InventorySlot.Add(NewItem, NewData);
+		CurrentSlot = FShooterItemSlot(NewItem->ItemType, EventPlayerState->GetNumInventoryItems() - 1);
+		UE_LOG(LogTemp, Warning, TEXT("Character::AddItemToSlottedItems(InventorySlot.Num = %d)"), EventPlayerState->GetNumInventoryItems());
+	}
+	EventPlayerState->AddSlottedItems(CurrentSlot, NewItem);
+	//SlottedItems[CurrentSlot] = NewItem;
+}
+
+bool AShooterCharacter::RemoveInventoryItem(UShooterItem* RemovedItem, int32 RemoveCount)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Character::RemoveInventoryItem()"));
+	if (!RemovedItem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RemoveInventoryItem: Failed trying to remove null item!"));
+		return false;
+	}
+
+	AShooterPlayerState* EventPlayerState = Cast<AShooterPlayerState>(PlayerState);
+	// Find current item data, which may be empty
+	FShooterItemData NewData;
+	EventPlayerState->FindItemData(RemovedItem, NewData);
+
+	if (!NewData.IsValid())
+	{
+		// Wasn't found
+		return false;
+	}
+
+	// If RemoveCount <= 0, delete all
+	if (RemoveCount <= 0)
+	{
+		NewData.ItemCount = 0;
+	}
+	else
+	{
+		NewData.ItemCount -= RemoveCount;
+	}
+	RemoveItemFromSlottedItems(NewData, RemovedItem);
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	// If we got this far, there is a change so notify and save
+	MyPC->NotifyInventoryItemChanged(RemovedItem, false);
+
+	MyPC->SaveInventory();
+	return true;
+}
+
+void AShooterCharacter::RemoveItemFromSlottedItems(FShooterItemData NewData, UShooterItem* RemovedItem)
+{
+	AShooterPlayerState* EventPlayerState = Cast<AShooterPlayerState>(PlayerState);
+
+	if (NewData.ItemCount > 0)
+	{
+		// Remove item entirely, make sure it is unslotted
+		if (RemovedItem->ItemType == UShooterAssetManager::WeaponItemType)
+		{
+			EventPlayerState->RemoveWeaponItems(RemovedItem);
+		}
+		else if (RemovedItem->ItemType == UShooterAssetManager::SkillItemType)
+		{
+			EventPlayerState->RemoveSkillItems(RemovedItem);
+		}
+		else
+		{
+			if (RemovedItem->ItemType == UShooterAssetManager::PotionItemType)
+			{
+				// If data changed, need to update storage and call callback
+				EventPlayerState->AddInventoryItems(NewData, RemovedItem);
+			}
+			else
+			{
+				// If data changed, need to update storage and call callback
+				EventPlayerState->RemoveInventoryItems(RemovedItem);
+			}
+		}
+		FShooterItemSlot ItemSlot;
+		EventPlayerState->FindItemSlot(RemovedItem, ItemSlot);
+		EventPlayerState->RemoveSlottedItems(ItemSlot, RemovedItem);
+	}
+}*/
 
 //////////////////////////////////////////////////////////////////////////
 // Damage & death
@@ -742,6 +961,8 @@ void AShooterCharacter::SpawnInventoryActor(class UShooterItem* NewItem)
 	UShooterWeaponItem* WeaponItem = Cast<UShooterWeaponItem>(NewItem);
 	AShooterPlayerController* PC = Cast<AShooterPlayerController>(Controller);
 	PC->GetInventoryItemSlot(WeaponItem, NewSlot);
+	//PC->GetPlayerDashboard()->GetInventoryWidget()->WeaponSlotChangedDelegate.Broadcast(NewItem, true);
+	//PC->NotifyWeaponSlotChanged(NewItem, true);
 
 	if (!NewSlot.IsValid())
 	{
@@ -1055,6 +1276,26 @@ void AShooterCharacter::SetCurrentWeaponType(EShooterWeaponType ActiveType)
 void AShooterCharacter::SetCurrentWeapon(AShooterWeaponBase* NewWeapon, AShooterWeaponBase* LastWeapon)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::SetCurrentWeapon()"));
+
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_Authority"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_Authority"));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_AutonomousProxy"));
+		break;
+	case ENetRole::ROLE_SimulatedProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_SimulatedProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_SimulatedProxy"));
+		break;
+	default:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_None"));
+		break;
+	}
 	if (!NewWeapon)
 	{
 		return;
@@ -1133,14 +1374,6 @@ bool AShooterCharacter::IsUsingMelee()
 
 	FGameplayTag AbilityTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Ability.Melee"));
 	GetActiveAbilitiesWithTags(FGameplayTagContainer(AbilityTag), ActiveAbilities);
-	if (ActiveAbilities.Num() > 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Character::Using Melee.--------"));
-	}
-	else 
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Character::Not Using Melee.--------"));
-	}
 	return ActiveAbilities.Num() > 0;
 }
 
@@ -1210,18 +1443,6 @@ EPawnState::Type AShooterCharacter::GetCurrentState() const
 	return CurrentState;
 }
 
-void AShooterCharacter::OnRep_BurstCounter()
-{
-	if (BurstCounter > 0)
-	{
-		SimulateWeaponFire();
-	}
-	else
-	{
-		StopSimulatingWeaponFire();
-	}
-}
-
 bool AShooterCharacter::ServerStartFire_Validate()
 {
 	return true;
@@ -1230,7 +1451,6 @@ bool AShooterCharacter::ServerStartFire_Validate()
 void AShooterCharacter::ServerStartFire_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::ServerStartFire()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("ServerStartFire()"));
 	StartWeaponFire();
 }
 
@@ -1242,171 +1462,6 @@ bool AShooterCharacter::ServerStopFire_Validate()
 void AShooterCharacter::ServerStopFire_Implementation()
 {
 	//StopWeaponFire();
-}
-
-void AShooterCharacter::SetPawnState(EPawnState::Type NewState)
-{
-	const EPawnState::Type PrevState = CurrentState;
-
-	if (PrevState == EPawnState::Firing && NewState != EPawnState::Firing)
-	{
-		OnBurstFinished();
-	}
-
-	CurrentState = NewState;
-
-	if (PrevState != EPawnState::Firing && NewState == EPawnState::Firing)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("PawnState : Firing"));
-		OnBurstStarted();
-	}
-}
-
-/** determine current weapon state */
-void AShooterCharacter::DeterminePawnState()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::DeterminePawnState()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("DeterminePawnState()"));
-	EPawnState::Type NewState = EPawnState::Idle;
-
-	if (bIsEquipped)
-	{
-		if (bPendingReload)
-		{
-			//if (CanReload() == false)
-			//{
-			//	NewState = CurrentState;
-			//}
-			//else
-			//{
-			//	NewState = EWeaponState::Reloading;
-			//}
-		}
-		else if ((bPendingReload == false) && (bWantsToFire == true) && (CanFire() == true))
-		{
-			NewState = EPawnState::Firing;
-		}
-	}
-	else if (bPendingEquip)
-	{
-		NewState = EPawnState::Equipping;
-	}
-
-	SetPawnState(NewState);
-}
-
-void AShooterCharacter::OnBurstStarted()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::OnBurstStarted()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("OnBurstStarted()"));
-	// start firing, can be delayed to satisfy TimeBetweenShots
-	const float GameTime = GetWorld()->GetTimeSeconds();
-	if (LastFireTime > 0 && CurrentWeapon->CommonConfig.TimeBetweenShots > 0.0f &&
-		LastFireTime + CurrentWeapon->CommonConfig.TimeBetweenShots > GameTime)
-	{
-		GetWorldTimerManager().SetTimer(TimerHandle_HandleFiring, this, &AShooterCharacter::HandleFiring, LastFireTime + CurrentWeapon->CommonConfig.TimeBetweenShots - GameTime, false);
-	}
-	else
-	{
-		HandleFiring();
-	}
-}
-void AShooterCharacter::OnBurstFinished()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::OnBurstFinished()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("OnBurstFinished()"));
-	// stop firing FX on remote clients
-	BurstCounter = 0;
-	bWantsToFire = false;
-	// stop firing FX locally, unless it's a dedicated server
-	if (GetNetMode() != NM_DedicatedServer)
-	{
-		StopSimulatingWeaponFire();
-	}
-
-	GetWorldTimerManager().ClearTimer(TimerHandle_HandleFiring);
-	bRefiring = false;
-}
-
-void AShooterCharacter::HandleFiring()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::HandleFiring()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("HandleFiring()"));
-	if (CanFire())
-	{
-		if (GetNetMode() != NM_DedicatedServer)
-		{
-			SimulateWeaponFire();
-		}
-
-		if (IsLocallyControlled())
-		{
-			DoMeleeAttack();
-			
-			// update firing FX on remote clients if function was called on server
-			BurstCounter++;
-		}
-	}
-	else if (IsLocallyControlled())
-	{
-		// stop weapon fire FX, but stay in Firing state
-		if (BurstCounter > 0)
-		{
-			OnBurstFinished();
-		}
-	}
-
-	if (IsLocallyControlled())
-	{
-		// local client will notify server
-		if (!HasAuthority())
-		{
-			ServerHandleFiring();
-		}
-
-		// setup refire timer
-		bRefiring = (CurrentState == EPawnState::Firing && CurrentWeapon->CommonConfig.TimeBetweenShots > 0.0f);
-		if (bRefiring)
-		{
-			GetWorldTimerManager().SetTimer(TimerHandle_HandleFiring, this, &AShooterCharacter::HandleFiring, CurrentWeapon->CommonConfig.TimeBetweenShots, false);
-		}
-	}
-
-	LastFireTime = GetWorld()->GetTimeSeconds();
-}
-
-bool AShooterCharacter::ServerHandleFiring_Validate()
-{
-	return true;
-}
-
-void AShooterCharacter::ServerHandleFiring_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::ServerHandleFiring()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("ServerHandleFiring()"));
-	HandleFiring();
-
-	if (CanFire())
-	{
-		// update firing FX on remote clients
-		BurstCounter++;
-	}
-}
-
-void AShooterCharacter::SimulateWeaponFire()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::SimulateWeaponFire()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("SimulateWeaponFire()"));
-	if (HasAuthority() && CurrentState != EWeaponState::Firing)
-	{
-		return;
-	}
-	DoMeleeAttack();
-}
-
-void AShooterCharacter::StopSimulatingWeaponFire()
-{
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1440,12 +1495,6 @@ void AShooterCharacter::StartWeaponFire()
 		break;
 	case ENetRole::ROLE_AutonomousProxy:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
-		break;
-	case ENetRole::ROLE_SimulatedProxy:
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_SimulatedProxy"));
-		break;
-	default:
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
 	}
 	if (!HasAuthority())
@@ -1502,35 +1551,20 @@ void AShooterCharacter::DoMeleeAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::DoMeleeAttack()"));
 	Super::DoMeleeAttack();
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("DoMeleeAttack_Implementation :"));
+
 	if (CanUseAbility())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Any Abilities Can Use."));
-		if (IsUsingMelee() == true) {
+		if (IsUsingMelee() && bEnableComboPeriod) {
 			UE_LOG(LogTemp, Warning, TEXT("Character::JumpSectionForCombo--------"));
-			//bEnableComboPeriod = true;
 			JumpSectionForCombo();
 		}
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Character::ActivateAbilitiesWithItemSlot--------"));
+			bEnableComboPeriod = true;
 			ActivateAbilitiesWithItemSlot(ActivateWeaponSlot, true);
-			/*
-			TArray<UShooterGameplayAbility*> ActiveAbilities;
-			FGameplayTag AbilityTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Ability.Melee"));
-			GetActiveAbilitiesWithTags(FGameplayTagContainer(AbilityTag), ActiveAbilities);
-			if (ActiveAbilities.Num() > 0)
-			{
-				//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("ActiveAbilities : %d"), ActiveAbilities.Num()));
-				return ActivateAbilitiesWithItemSlot(ActivateWeaponSlot, true);
-				//return ActivateAbilitiesWithTags(FGameplayTagContainer(AbilityTag), true);
-				//return true;
-			}*/
 		}
-	}
-	else 
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Can't Use any Ability."));
 	}
 }
 
@@ -1545,10 +1579,6 @@ void AShooterCharacter::DoSkillAttack()
 		TArray<UShooterGameplayAbility*> ActiveAbilities;
 		FGameplayTag AbilityTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Ability.Skill"));
 		GetActiveAbilitiesWithTags(FGameplayTagContainer(AbilityTag), ActiveAbilities);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Can't Use any Ability."));
 	}
 }
 
@@ -1684,12 +1714,37 @@ void AShooterCharacter::StopAllAnimMontages()
 void AShooterCharacter::JumpSectionForCombo()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::JumpSectionForCombo(%s)"), *FString::Printf(TEXT("bEnableComboPeriod = %s"), bEnableComboPeriod == true?TEXT("true"):TEXT("false")));
-	
+
+	switch (GetNetMode())
+	{
+	case ENetMode::NM_DedicatedServer:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  NM_DedicatedServer"));
+		break;
+	case ENetMode::NM_ListenServer:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  NM_ListenServer"));
+		break;
+	case ENetMode::NM_Client:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  NM_Client"));
+		break;
+	default:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  NM_Standalone"));
+		break;
+	}
+
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_Authority"));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
+		break;
+	}
 	if (bEnableComboPeriod == true) {
 		//USkeletalMeshComponent* UseMesh = GetPawnMesh();
 		USkeletalMeshComponent* UseMesh = GetPawnMesh();
 
-		if (UseMesh && UseMesh->AnimScriptInstance && JumpSectionNS && bEnableComboPeriod)
+		if (UseMesh && UseMesh->AnimScriptInstance && JumpSectionNS && JumpSectionNS->GetJumpSetctions().Num()>0)
 		{
 			int32 RandIndex = FMath::RandRange(0, (JumpSectionNS->GetJumpSetctions().Num()-1));
 
@@ -1697,9 +1752,9 @@ void AShooterCharacter::JumpSectionForCombo()
 		
 			//UAnimInstance* AnimInstance = GetPawnMesh()->GetAnimInstance();
 			UAnimMontage* AnimMontage = UseMesh->AnimScriptInstance->GetCurrentActiveMontage();
-			if (UseMesh->AnimScriptInstance->GetCurrentActiveMontage() != NULL) 
+			if (UseMesh->AnimScriptInstance->GetCurrentActiveMontage() != NULL)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("JumpSectionForCombo(GetCurrentActiveMontage())"));
+				UE_LOG(LogTemp, Warning, TEXT("JumpSectionForCombo(CurrentActiveMontage is valid.)"));
 			}
 
 			//UseMesh->AnimScriptInstance->Montage_GetCurrentSection(AnimMontage);
@@ -1709,11 +1764,7 @@ void AShooterCharacter::JumpSectionForCombo()
 			UE_LOG(LogTemp, Warning, TEXT("Character::JumpSectionForCombo(CurSection = %s, NextSection = %s)"), *CurSection.ToString(), *NextSection.ToString());
 
 			UseMesh->AnimScriptInstance->Montage_SetNextSection(CurSection, NextSection, UseMesh->AnimScriptInstance->GetCurrentActiveMontage());
-			SetEnableComboPeriod(false);
-		}
-		else 
-		{
-			UE_LOG(LogTemp, Warning, TEXT("can't Set NextSection...."));
+			//SetEnableComboPeriod(false);
 		}
 		bEnableComboPeriod = false;
 	}
@@ -2427,6 +2478,7 @@ void AShooterCharacter::PossessedBy(AController* NewController)
 	AShooterPlayerController* PC = Cast<AShooterPlayerController>(NewController);
 	const TMap<FShooterItemSlot, UShooterItem*>& SlottedItems = PC->GetSlottedItemMap();
 	UE_LOG(LogTemp, Warning, TEXT("Character::SpawnPropsActors(  PC->SlottedItems：%d)"), SlottedItems.Num());
+
 	// 道具
 	SpawnPropsActors();
 	//InventoryItems.Reset();
@@ -2488,6 +2540,7 @@ void AShooterCharacter::OnRep_Controller()
 	{
 		AbilitySystemComponent->RefreshAbilityActorInfo();
 	}
+
 }
 /*
 float AShooterCharacter::GetHealth() const
@@ -2519,262 +2572,4 @@ int32 AShooterCharacter::GetCharacterLevel() const
 {
 	return CharacterLevel;
 }
-
-bool AShooterCharacter::SetCharacterLevel(int32 NewLevel)
-{
-	if (CharacterLevel != NewLevel && NewLevel > 0)
-	{
-		// Our level changed so we need to refresh abilities
-		RemoveStartupGameplayAbilities();
-		CharacterLevel = NewLevel;
-		AddStartupGameplayAbilities();
-		return true;
-	}
-	return false;
-}*/
-/*
-bool AShooterCharacter::ActivateAbilitiesWithItemSlot(FShooterItemSlot ItemSlot, bool bAllowRemoteActivation)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::ActivateAbilitiesWithItemSlot(SlottedAbilities.Num = %d)"), SlottedAbilities.Num());
-	//GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, TEXT("ActivateAbilitiesWithItemSlot(SlottedAbilities.Num = %d)"), SlottedAbilities.Num());
-	FGameplayAbilitySpecHandle* FoundHandle = SlottedAbilities.Find(ItemSlot);
-
-	if (FoundHandle && AbilitySystemComponent)
-	{
-		return AbilitySystemComponent->TryActivateAbility(*FoundHandle, bAllowRemoteActivation);
-	}
-	return false;
-}
-
-void AShooterCharacter::GetActiveAbilitiesWithItemSlot(FShooterItemSlot ItemSlot, TArray<UShooterGameplayAbility*>& ActiveAbilities)
-{
-	FGameplayAbilitySpecHandle* FoundHandle = SlottedAbilities.Find(ItemSlot);
-
-	if (FoundHandle && AbilitySystemComponent)
-	{
-		FGameplayAbilitySpec* FoundSpec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle);
-
-		if (FoundSpec)
-		{
-			TArray<UGameplayAbility*> AbilityInstances = FoundSpec->GetAbilityInstances();
-
-			// Find all ability instances executed from this slot
-			for (UGameplayAbility* ActiveAbility : AbilityInstances)
-			{
-				ActiveAbilities.Add(Cast<UShooterGameplayAbility>(ActiveAbility));
-			}
-		}
-	}
-}
-
-bool AShooterCharacter::ActivateAbilitiesWithTags(FGameplayTagContainer AbilityTags, bool bAllowRemoteActivation)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::ActivateAbilitiesWithTags()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, TEXT("ActivateAbilitiesWithTags()"));
-	if (AbilitySystemComponent)
-	{
-		return AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags, bAllowRemoteActivation);
-	}
-
-	return false;
-}
-
-void AShooterCharacter::GetActiveAbilitiesWithTags(FGameplayTagContainer AbilityTags, TArray<UShooterGameplayAbility*>& ActiveAbilities)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, TEXT("GetActiveAbilitiesWithTags()"));
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->GetActiveAbilitiesWithTags(AbilityTags, ActiveAbilities);
-	}
-}
-
-bool AShooterCharacter::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float& TimeRemaining, float& CooldownDuration)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::GetCooldownRemainingForTag()"));
-	if (AbilitySystemComponent && CooldownTags.Num() > 0)
-	{
-		TimeRemaining = 0.f;
-		CooldownDuration = 0.f;
-
-		FGameplayEffectQuery const Query = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(CooldownTags);
-		TArray< TPair<float, float> > DurationAndTimeRemaining = AbilitySystemComponent->GetActiveEffectsTimeRemainingAndDuration(Query);
-		if (DurationAndTimeRemaining.Num() > 0)
-		{
-			int32 BestIdx = 0;
-			float LongestTime = DurationAndTimeRemaining[0].Key;
-			for (int32 Idx = 1; Idx < DurationAndTimeRemaining.Num(); ++Idx)
-			{
-				if (DurationAndTimeRemaining[Idx].Key > LongestTime)
-				{
-					LongestTime = DurationAndTimeRemaining[Idx].Key;
-					BestIdx = Idx;
-				}
-			}
-			TimeRemaining = DurationAndTimeRemaining[BestIdx].Key;
-			CooldownDuration = DurationAndTimeRemaining[BestIdx].Value;
-
-			return true;
-		}
-	}
-	return false;
-}*/
-/*
-void AShooterCharacter::HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::HandleDamage()"));
-	//TSubclassOf<UDamageType> const ValidDamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
-	//FDamageEvent DamageEvent(ValidDamageTypeClass);
-	//OnDamaged(DamageAmount, HitInfo, DamageTags, EventInstigator, DamageCauser);
-	//UGameplayStatics::ApplyDamage(DamageCauser, DamageAmount, EventInstigator, TSubclassOf<UDamageType>(UDamageType::StaticClass()));
-	AShooterCharacter* hitPawn = Cast<AShooterCharacter>(HitInfo.Actor);
-	if (nullptr != hitPawn) 
-	{
-		FPointDamageEvent damageEvent;
-		damageEvent.HitInfo = HitInfo;
-	}
-	//TakeDamage(DamageAmount, UDamageType::StaticClass());
-}*/
-/*
-float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::TakeDamage()"));
-	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
-	if (MyPC && MyPC->HasGodMode())
-	{
-		return 0.f;
-	}
-
-	if (Health <= 0.f)
-	{
-		return 0.f;
-	}
-
-	// Modify based on game rules.
-	AShooterGameMode* const Game = GetWorld()->GetAuthGameMode<AShooterGameMode>();
-	Damage = Game ? Game->ModifyDamage(Damage, this, DamageEvent, EventInstigator, DamageCauser) : 0.f;
-
-	const float ActualDamage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-	if (ActualDamage > 0.f)
-	{
-		Health -= ActualDamage;
-		if (Health <= 0)
-		{
-			Die(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
-		}
-		else
-		{
-			PlayHit(ActualDamage, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
-		}
-
-		MakeNoise(1.0f, EventInstigator ? EventInstigator->GetPawn() : this);
-	}
-
-	return ActualDamage;
-}
 */
-/*
-void AShooterCharacter::OnDamaged_Implementation(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::OnDamaged_Implementation()"));
-	TSubclassOf<UDamageType> const ValidDamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
-	FDamageEvent DamageEvent(ValidDamageTypeClass);
-
-	if (CanUseAbility())
-	{
-		// int32 StartSection = FMath::RandRange(0, 2);
-		// Death anim
-		// float DeathAnimDuration = PlayAnimMontage(HitAnim);
-
-		PlayHit(DamageAmount, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
-		
-		AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(EventInstigator);
-		if (MyPC && MyPC->HasGodMode())
-		{
-			return;
-		}
-
-		if (Health <= 0.f)
-		{
-			return;
-		}
-
-		// make sure we have a good damage type
-		//TSubclassOf<UDamageType> const ValidDamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
-		//FDamageEvent DamageEvent(ValidDamageTypeClass);
-
-		// Modify based on game rules.
-		AShooterGameMode* const Game = GetWorld()->GetAuthGameMode<AShooterGameMode>();
-		DamageAmount = Game ? Game->ModifyDamage(DamageAmount, this, DamageEvent, EventInstigator, DamageCauser) : 0.f;
-
-		const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-		if (DamageAmount > 0.f)
-		{
-			Health -= DamageAmount;
-			if (Health <= 0)
-			{
-				Die(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-			}
-			else
-			{
-				PlayHit(DamageAmount, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
-			}
-
-			MakeNoise(1.0f, EventInstigator ? EventInstigator->GetPawn() : this);
-		}
-	}
-	else {
-		Die(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	}
-}*/
-/*
-void AShooterCharacter::HandleHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::HandleHealthChanged()"));
-	// We only call the BP callback if this is not the initial ability setup 
-	if (bAbilitiesInitialized)
-	{
-		OnHealthChanged(DeltaValue, EventTags);
-	}
-}*/
-/*
-void AShooterCharacter::OnHealthChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::OnHealthChanged_Implementation()"));
-
-	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
-
-	AShooterHUD* ShooterHUD = MyPC->GetShooterHUD();
-
-}
-*/
-/*
-void AShooterCharacter::HandleManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::HandleManaChanged()"));
-	if (bAbilitiesInitialized)
-	{
-		OnManaChanged(DeltaValue, EventTags);
-	}
-}*/
-/*
-void AShooterCharacter::OnManaChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Character::OnManaChanged_Implementation()"));
-
-}*/
-/*
-void AShooterCharacter::HandleMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
-{
-	// Update the character movement's walk speed 
-	GetCharacterMovement()->MaxWalkSpeed = GetMoveSpeed();
-
-	if (bAbilitiesInitialized)
-	{
-		OnMoveSpeedChanged(DeltaValue, EventTags);
-	}
-}
-/*
-void AShooterCharacter::OnMoveSpeedChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
-{
-
-}*/

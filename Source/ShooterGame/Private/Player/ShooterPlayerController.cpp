@@ -7,6 +7,7 @@
 #include "ShooterAssetManager.h"
 #include "ShooterBlueprintLibrary.h"
 #include "Items/ShooterItem.h"
+#include "Items/ShooterCategoryItem.h"
 #include "Player/ShooterPlayerController.h"
 #include "Player/ShooterPlayerCameraManager.h"
 #include "Player/ShooterCheatManager.h"
@@ -56,6 +57,11 @@ static const int32 LotsBulletsCount = 100;
 static const int32 LotsRocketsCount = 10;
 static const int32 GoodScoreCount = 10;
 static const int32 GreatScoreCount = 15;
+//static const int32 PlayerAllSlotCount = 13;
+//static const int32 PlayerAbilitySlotCount = 5;
+//static const int32 PlayerWeaponSlotCount = 2;
+//static const int32 PlayerInventorySlotCount = 6;
+
 
 AShooterPlayerController::AShooterPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -64,6 +70,11 @@ AShooterPlayerController::AShooterPlayerController(const FObjectInitializer& Obj
 	bAllowGameActions = true;
 	bGameEndedFrame = false;
 	LastDeathLocation = FVector::ZeroVector;
+
+	SlottedItems.Reserve(PLAYER_ALL_SLOT_COUNT);
+	AbilitySlot.Reserve(PLAYER_ABILITY_SLOT_COUNT);
+	WeaponSlot.Reserve(PLAYER_WEAPON_SLOT_COUNT);
+	InventorySlot.Reserve(PLAYER_INVENTORY_SLOT_COUNT);
 
 	ServerSayString = TEXT("Say");
 	ShooterFriendUpdateTimer = 0.0f;
@@ -83,7 +94,6 @@ void AShooterPlayerController::SetupInputComponent()
 
 	// UI input
 	InputComponent->BindAction("InGameMenu", IE_Pressed, this, &AShooterPlayerController::OnToggleInGameMenu);
-	//InputComponent->BindAction("ShopMenu", IE_Pressed, this, &AShooterPlayerController::OnToggleShopMenu); 
 	InputComponent->BindAction("ToggleStoreboard", IE_Pressed, this, &AShooterPlayerController::OnToggleStoreboard);
 	InputComponent->BindAction("Scoreboard", IE_Pressed, this, &AShooterPlayerController::OnShowScoreboard);
 	InputComponent->BindAction("Scoreboard", IE_Released, this, &AShooterPlayerController::OnHideScoreboard);
@@ -99,16 +109,30 @@ void AShooterPlayerController::SetupInputComponent()
 
 void AShooterPlayerController::PostInitializeComponents()
 {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerController::PostInitializeComponents()"));
 	Super::PostInitializeComponents();
 	FShooterStyle::Initialize();
 	ShooterFriendUpdateTimer = 0;
-	LoadInventory();
-
+	//LoadInventory();
 	//OnInventoryItemChanged.AddDynamic(this, &AShooterPlayerController::OnInventoryItemChange);
 	//OnSlottedItemChanged.AddDynamic(this, &AShooterPlayerController::OnItemSlotChanged);
 	OnInventoryItemChangedNative.AddUObject(this, &AShooterPlayerController::OnInventoryItemChange);
 	//OnSlottedItemChangedNative.AddUObject(this, &AShooterPlayerController::OnItemSlotChanged);
+	InitializPlayerSlots();
+}
 
+void AShooterPlayerController::InitializPlayerSlots()
+{
+	for (int32 i = 0; i < PLAYER_ABILITY_SLOT_COUNT; i++)
+	{
+		FShooterItemSlot ItemSlot = FShooterItemSlot(UShooterAssetManager::SkillItemType, i);
+		SlottedItems.Emplace(ItemSlot, nullptr);
+	}
+	for (int32 i = 0; i < PLAYER_WEAPON_SLOT_COUNT; i++)
+	{
+		FShooterItemSlot ItemSlot = FShooterItemSlot(UShooterAssetManager::WeaponItemType, i);
+		SlottedItems.Emplace(ItemSlot, nullptr);
+	}
 }
 
 void AShooterPlayerController::ClearLeaderboardDelegate()
@@ -178,6 +202,7 @@ void AShooterPlayerController::TickActor(float DeltaTime, enum ELevelTick TickTy
 
 void AShooterPlayerController::BeginDestroy()
 {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerController::BeginDestroy()"));
 	Super::BeginDestroy();
 	ClearLeaderboardDelegate();
 
@@ -193,6 +218,7 @@ void AShooterPlayerController::BeginDestroy()
 
 void AShooterPlayerController::SetPlayer( UPlayer* InPlayer )
 {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerController::SetPlayer()"));
 	Super::SetPlayer( InPlayer );
 
 	if (ULocalPlayer* const LocalPlayer = Cast<ULocalPlayer>(Player))
@@ -202,6 +228,10 @@ void AShooterPlayerController::SetPlayer( UPlayer* InPlayer )
 		ShooterIngameMenu->Construct(Cast<ULocalPlayer>(Player));
 		ShooterShopMenu = MakeShareable(new FShooterShopMenu());
 		ShooterShopMenu->Construct(Cast<ULocalPlayer>(Player));
+
+		//ShowPlayerDashboard();
+		ShowPlayerTarget();
+		ShowTeamBar();
 
 		FInputModeGameOnly InputMode;
 		SetInputMode(InputMode);
@@ -260,6 +290,7 @@ void AShooterPlayerController::OnQueryAchievementsComplete(const FUniqueNetId& P
 
 void AShooterPlayerController::OnLeaderboardReadComplete(bool bWasSuccessful)
 {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerController::OnLeaderboardReadComplete()"));
 	if (ReadObject.IsValid() && ReadObject->ReadState == EOnlineAsyncTaskState::Done && !bHasFetchedPlatformData)
 	{
 		bHasFetchedPlatformData = true;
@@ -460,12 +491,31 @@ void AShooterPlayerController::OnKill()
 	}
 }
 
+/*
+void AShooterPlayerController::OnInventoryMessage(class AShooterPlayerState* OwnerPlayerState, const UShooterItem* Item, bool bAdd)
+{
+	AShooterHUD* ShooterHUD = GetShooterHUD();
+	if (ShooterHUD)
+	{
+		ShooterHUD->RefreshInventoryByMessage(OwnerPlayerState, Item, bAdd);
+	}
+}*/
+
+void AShooterPlayerController::OnCoinsIncomeMessage(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* KilledPlayerState, const UDamageType* KillerDamageType)
+{
+	AShooterHUD* ShooterHUD = GetShooterHUD();
+	if (ShooterHUD)
+	{
+		ShooterHUD->RefreshInventoryWidget(KillerPlayerState, KilledPlayerState, KillerDamageType);
+	}
+}
+
 void AShooterPlayerController::OnDeathMessage(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* KilledPlayerState, const UDamageType* KillerDamageType) 
 {
 	AShooterHUD* ShooterHUD = GetShooterHUD();
 	if (ShooterHUD)
 	{
-		ShooterHUD->ShowDeathMessage(KillerPlayerState, KilledPlayerState, KillerDamageType);		
+		ShooterHUD->ShowDeathMessage(KillerPlayerState, KilledPlayerState, KillerDamageType);
 	}
 
 	ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player);
@@ -596,33 +646,6 @@ void AShooterPlayerController::OnToggleInGameMenu()
 	}
 }
 
-void AShooterPlayerController::OnToggleShopMenu()
-{
-	ShowStoreWidget();
-	/*
-	if (GEngine->GameViewport == nullptr)
-	{
-		return;
-	}
-
-	// this is not ideal, but necessary to prevent both players from pausing at the same time on the same frame
-	UWorld* GameWorld = GEngine->GameViewport->GetWorld();
-
-	for (auto It = GameWorld->GetControllerIterator(); It; ++It)
-	{
-		AShooterPlayerController* Controller = Cast<AShooterPlayerController>(*It);
-		if (Controller && Controller->IsPaused())
-		{
-			return;
-		}
-	}
-
-	// if no one's paused, pause
-	if (ShooterShopMenu.IsValid())
-	{
-		ShooterShopMenu->ToggleGameMenu();
-	}*/
-}
 void AShooterPlayerController::OnConditionalCloseScoreboard()
 {
 	AShooterHUD* ShooterHUD = GetShooterHUD();
@@ -638,15 +661,6 @@ void AShooterPlayerController::OnToggleScoreboard()
 	if(ShooterHUD && ( ShooterHUD->IsMatchOver() == false ))
 	{
 		ShooterHUD->ToggleScoreboard();
-	}
-}
-
-void AShooterPlayerController::OnToggleStoreboard()
-{
-	AShooterHUD* ShooterHUD = GetShooterHUD();
-	if (ShooterHUD && (ShooterHUD->IsMatchOver() == false))
-	{
-		ShooterHUD->ToggleStoreboard();
 	}
 }
 
@@ -954,6 +968,26 @@ void AShooterPlayerController::ClientSendRoundEndEvent_Implementation(bool bIsWi
 	}
 }
 
+void AShooterPlayerController::ClientReceivePurchaseFailure_Implementation(const FText& Message, class UShooterItem* NewItem)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::ClientReceivePurchaseFailer_Implementation()"));
+	AShooterHUD* ShooterHUD = GetShooterHUD();
+	if (ShooterHUD)
+	{
+		ShooterHUD->ShowPurchaseFailureMessage(Message, NewItem);
+	}
+}
+
+void AShooterPlayerController::ClientReceivePurchaseEvent_Implementation(const FShooterItemSlot& NewItemSlot, const FShooterItemData& NewItemData, class UShooterItem* NewItem, bool bAdd)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::ClientReceivePurchaseEvent_Implementation()"));
+	AShooterHUD* ShooterHUD = GetShooterHUD();
+	if (ShooterHUD)
+	{
+		ShooterHUD->RefreshInventoryByMessage(NewItemSlot, NewItemData, NewItem, bAdd);
+	}
+}
+
 void AShooterPlayerController::SetCinematicMode(bool bInCinematicMode, bool bHidePlayer, bool bAffectsHUD, bool bAffectsMovement, bool bAffectsTurning)
 {
 	Super::SetCinematicMode(bInCinematicMode, bHidePlayer, bAffectsHUD, bAffectsMovement, bAffectsTurning);
@@ -1016,6 +1050,202 @@ void AShooterPlayerController::GetLifetimeReplicatedProps( TArray< FLifetimeProp
 	// only to local owner: weapon change requests are locally instigated, other clients don't need it
 	DOREPLIFETIME_CONDITION(AShooterPlayerController, bInfiniteAmmo, COND_OwnerOnly );
 	DOREPLIFETIME_CONDITION(AShooterPlayerController, bInfiniteClip, COND_OwnerOnly );
+
+}
+/*
+void AShooterPlayerController::OnRep_PurchaseItem(UShooterItem* NewPurchaseItem)
+{
+	SetCurrentPurchaseItem(NewPurchaseItem);
+}
+
+void AShooterPlayerController::SetCurrentPurchaseItem(UShooterItem* NewPurchaseItem)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::SetCurrentPurchaseItem()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_Authority"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_Authority"));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_AutonomousProxy"));
+		break;
+	case ENetRole::ROLE_SimulatedProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_SimulatedProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_SimulatedProxy"));
+		break;
+	default:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_None"));
+		break;
+	}
+	CurrentPurchaseItem = NewPurchaseItem;
+
+	UpdateInventoryItem(CurrentPurchaseItem, true);
+	//if (IsLocalController())
+	//{
+	//	NotifyWeaponSlotChanged(CurrentPurchaseItem, true);
+	//}
+}*/
+
+bool AShooterPlayerController::CanPurchaseItem(UShooterItem* Item)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::CanPurchaseItem()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogOnline, Warning, TEXT("On  ROLE_Authority."));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
+		break;
+	}
+	if (IsSlotSpaceEnough(Item))
+	{
+		return true;
+	}
+	return false;
+}
+
+bool AShooterPlayerController::HasItem(UShooterItem* Item)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::CanPurchaseItem()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogOnline, Warning, TEXT("On  ROLE_Authority."));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
+		break;
+	}
+	const FShooterItemSlot* FoundItem = SlottedItems.FindKey(Item);
+
+	if (FoundItem)
+	{
+		return true;
+	}
+	return false;
+}
+
+bool AShooterPlayerController::IsCoinsEnough(UShooterItem* Item)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::IsCoinsEnough()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogOnline, Warning, TEXT("On  ROLE_Authority."));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
+		break;
+	}
+	if (Item->Price >= GetInventoryItemCount(SoulsItem))
+	{
+		return true;
+	}
+	const FText ReturnReason = NSLOCTEXT("PurchaseFailures", "Coins", "Coins Not Enough.");
+	ClientReceivePurchaseFailure(ReturnReason, Item);
+	return false;
+}
+
+bool AShooterPlayerController::IsSlotSpaceEnough(UShooterItem* Item)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::IsCoinsEnough()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogOnline, Warning, TEXT("On  ROLE_Authority."));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
+		break;
+	}
+	if (HasItem(Item) == false || IsPluralItems(Item) == true)
+	{
+		if (Item->ItemType == UShooterAssetManager::SkillItemType && AbilitySlot.Num() < PLAYER_ABILITY_SLOT_COUNT)
+		{
+			return true;
+		}
+		else if (Item->ItemType == UShooterAssetManager::WeaponItemType && WeaponSlot.Num() < PLAYER_WEAPON_SLOT_COUNT)
+		{
+			return true;
+		}
+		else if(Item->ItemType != UShooterAssetManager::WeaponItemType && Item->ItemType != UShooterAssetManager::SkillItemType && InventorySlot.Num() < PLAYER_INVENTORY_SLOT_COUNT || Item->ItemType == UShooterAssetManager::PotionItemType)
+		{
+			return true;
+		}
+		const FText ReturnReason = NSLOCTEXT("PurchaseFailures", "SlotSpace", "玩家可用插槽数量不足.");
+		ClientReceivePurchaseFailure(ReturnReason, Item);
+		return false;
+	}
+	const FText ReturnReason = NSLOCTEXT("PurchaseFailures", "SlotSpace", "非药品类道具不可重复购买.");
+	ClientReceivePurchaseFailure(ReturnReason, Item);
+	return false;
+}
+
+bool AShooterPlayerController::IsPluralItems(UShooterItem* Item)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::IsPluralItems()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogOnline, Warning, TEXT("On  ROLE_Authority."));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
+		break;
+	}
+	if (Item->ItemType == UShooterAssetManager::PotionItemType)
+	{
+		return true;
+	}
+	return false;
+}
+
+void AShooterPlayerController::PurchaseItem(UShooterItem* Item)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::PurchaseItem()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogOnline, Warning, TEXT("On  ROLE_Authority."));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
+		break;
+	}
+	if (Item && IsInState(NAME_Playing))
+	{
+		if (HasAuthority())
+		{
+			if (CanPurchaseItem(Item)) 
+			{
+				//SetCurrentPurchaseItem(Item);
+				UpdateInventoryItem(Item, true);
+			}
+		}
+		else
+		{
+			ServerPurchase(Item);
+		}
+		//if (GetNetMode() == NM_Client && Role != ROLE_Authority)
+		//{
+			//AShooterPlayerState* ShooterPlayerState = Cast<AShooterPlayerState>(PlayerState);
+			//ShooterPlayerState->InformAboutInventory(ShooterPlayerState, NewItem, bAdd);
+		//}
+	}
+}
+
+bool AShooterPlayerController::ServerPurchase_Validate(UShooterItem* Item)
+{
+	return true;
+}
+
+void AShooterPlayerController::ServerPurchase_Implementation(UShooterItem* Item)
+{
+	PurchaseItem(Item);
 }
 
 void AShooterPlayerController::Suicide()
@@ -1117,6 +1347,23 @@ AShooterHUD* AShooterPlayerController::GetShooterHUD() const
 	return Cast<AShooterHUD>(GetHUD());
 }
 
+void AShooterPlayerController::NotifyHPChanged(float InHealth, float InMaxHealth, float InRestoreHealth)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::NotifyHPChanged()"));
+	//if (PlayerDashboard)
+	//{
+	//	PlayerDashboard->GetAbilityWidget()->HPChangedDelegate.Broadcast(InHealth, InMaxHealth, InRestoreHealth);
+	//}
+}
+
+void AShooterPlayerController::NotifyMPChanged(float InMana, float InMaxMana, float InRestoreMana)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::NotifyMPChanged()"));
+	if (PlayerDashboard)
+	{
+		PlayerDashboard->GetAbilityWidget()->MPChangedDelegate.Broadcast(InMana, InMaxMana, InRestoreMana);
+	}
+}
 
 UShooterPersistentUser* AShooterPlayerController::GetPersistentUser() const
 {
@@ -1183,7 +1430,7 @@ void AShooterPlayerController::UpdateAchievementsOnGameEnd()
 	{
 		AShooterPlayerState* ShooterPlayerState = Cast<AShooterPlayerState>(PlayerState);
 		if (ShooterPlayerState)
-		{			
+		{
 			const UShooterPersistentUser*  PersistentUser = GetPersistentUser();
 
 			if (PersistentUser)
@@ -1439,21 +1686,33 @@ void AShooterPlayerController::PreClientTravel(const FString& PendingURL, ETrave
 	}
 }
 
-bool AShooterPlayerController::UpdateInventoryItem(UShooterItem* NewItem, bool bAdd)
+void AShooterPlayerController::UpdateInventoryItem(UShooterItem* NewItem, bool bAdd)
 {
-	//const TMap<UShooterItem*, FShooterItemData>& InventoryData = GetInventoryDataMap();
+	//const TMap<UShooterItem*, FShooterItemData>& InventorySlot = GetInventoryDataMap();
 	UE_LOG(LogTemp, Warning, TEXT("Controller::UpdateInventoryItem( bAdd = %s)"), bAdd==true?TEXT("true"):TEXT("false"));
 	if (!NewItem)
 	{
-		return false;
+		return;
+	}
+	if (NewItem->ItemType == UShooterAssetManager::TokenItemType)
+	{
+		int32 SoulsCount = GetInventoryItemCount(NewItem);
+		OnInventorySoulsChangedNative.Broadcast(SoulsCount);
 	}
 	if (bAdd)
 	{
-		return AddInventoryItem(NewItem, 1, 1, true);
+		AddInventoryItem(NewItem, 1, 1, true);
+
+		AShooterCharacter* AC = Cast<AShooterCharacter>(GetCharacter());
+		if (NewItem->ItemType == UShooterAssetManager::WeaponItemType)
+		{
+			AC->UpdateInventoryActors(NewItem, true);
+			//pawn->SpawnPropsActors();
+		}
 	}
 	else
 	{
-		return RemoveInventoryItem(NewItem, 0);
+		RemoveInventoryItem(NewItem, 0);
 	}
 }
 
@@ -1483,8 +1742,7 @@ bool AShooterPlayerController::AddInventoryItem(UShooterItem* NewItem, int32 Ite
 
 	if (OldData != NewData)
 	{
-		// If data changed, need to update storage and call callback
-		InventoryData.Add(NewItem, NewData);
+		AddItemToSlottedItems(NewData, NewItem, ItemCount);
 		NotifyInventoryItemChanged(NewItem, true);
 		bChanged = true;
 	}
@@ -1492,7 +1750,7 @@ bool AShooterPlayerController::AddInventoryItem(UShooterItem* NewItem, int32 Ite
 	if (bAutoSlot)
 	{
 		// Slot item if required
-		bChanged |= FillEmptySlotWithItem(NewItem);
+		//bChanged |= FillEmptySlotWithItem(NewItem);
 	}
 	if (bChanged)
 	{
@@ -1536,33 +1794,7 @@ bool AShooterPlayerController::RemoveInventoryItem(UShooterItem* RemovedItem, in
 	{
 		NewData.ItemCount -= RemoveCount;
 	}
-
-	if (NewData.ItemCount > 0)
-	{
-		// Update data with new count
-		InventoryData.Add(RemovedItem, NewData);
-	}
-	else
-	{
-		// Remove item entirely, make sure it is unslotted
-		InventoryData.Remove(RemovedItem);
-
-		//if (RemovedItem->ItemType != UShooterAssetManager::TokenItemType)
-		//{
-		//	AShooterCharacter* pawn = Cast<AShooterCharacter>(GetCharacter());
-		//	pawn->UpdateInventoryActors(RemovedItem, false);
-		//}
-		for (TPair<FShooterItemSlot, UShooterItem*>& Pair : SlottedItems)
-		{
-			if (Pair.Value == RemovedItem)
-			{
-				Pair.Value = nullptr;
-				NotifySlottedItemChanged(Pair.Key, Pair.Value);
-			}
-		}
-
-	}
-
+	//RemoveItemFromSlottedItems(NewData, RemovedItem);
 	// If we got this far, there is a change so notify and save
 	NotifyInventoryItemChanged(RemovedItem, false);
 
@@ -1570,12 +1802,97 @@ bool AShooterPlayerController::RemoveInventoryItem(UShooterItem* RemovedItem, in
 	return true;
 }
 
+void AShooterPlayerController::AddItemToSlottedItems(FShooterItemData NewData, UShooterItem* NewItem, int32 ItemCount)
+{
+	FShooterItemSlot CurrentSlot;
+	AShooterPlayerState* ShooterPlayerState = Cast<AShooterPlayerState>(PlayerState);
+	if (NewItem->ItemType == UShooterAssetManager::WeaponItemType)
+	{
+		WeaponSlot.Add(NewItem, NewData);
+		//ShooterPlayerState->AddWeaponItems(NewData, NewItem);
+		CurrentSlot = FShooterItemSlot(NewItem->ItemType, WeaponSlot.Num() - 1);
+		UE_LOG(LogTemp, Warning, TEXT("Controller::AddItemToSlottedItems(WeaponSlot.Num = %d)"), WeaponSlot.Num());
+		SlottedItems[CurrentSlot] = NewItem;
+	}
+	else if (NewItem->ItemType == UShooterAssetManager::SkillItemType)
+	{
+		AbilitySlot.Add(NewItem, NewData);
+		CurrentSlot = FShooterItemSlot(NewItem->ItemType, AbilitySlot.Num() - 1);
+		UE_LOG(LogTemp, Warning, TEXT("Controller::AddItemToSlottedItems(AbilitySlot.Num = %d)"), AbilitySlot.Num());
+		SlottedItems[CurrentSlot] = NewItem;
+	}
+	else
+	{
+		// If data changed, need to update storage and call callback
+		InventorySlot.Add(NewItem, NewData);
+		int32 Count = InventorySlot.Num() - 1;
+		CurrentSlot = FShooterItemSlot(NewItem->ItemType, Count);
+		UE_LOG(LogTemp, Warning, TEXT("Controller::AddItemToSlottedItems(InventorySlot.Num = %d)"), InventorySlot.Num());
+		SlottedItems.Add(CurrentSlot, NewItem);
+	}
+	ClientReceivePurchaseEvent(CurrentSlot, NewData, NewItem, true);
+}
+
+void AShooterPlayerController::RemoveItemFromSlottedItems(FShooterItemData NewData, UShooterItem* RemovedItem)
+{
+	if (NewData.ItemCount > 0)
+	{
+		// Update data with new count
+		InventorySlot.Add(RemovedItem, NewData);
+		if (RemovedItem->ItemType == UShooterAssetManager::WeaponItemType)
+		{
+			WeaponSlot.Add(RemovedItem, NewData);
+			UE_LOG(LogTemp, Warning, TEXT("Controller::RemoveItemFromSlottedItems(WeaponSlot.Num = %d)"), WeaponSlot.Num());
+		}
+		else if (RemovedItem->ItemType == UShooterAssetManager::SkillItemType)
+		{
+			AbilitySlot.Add(RemovedItem, NewData);
+			UE_LOG(LogTemp, Warning, TEXT("Controller::RemoveItemFromSlottedItems(AbilitySlot.Num = %d)"), AbilitySlot.Num());
+		}
+		else
+		{
+			// If data changed, need to update storage and call callback
+			InventorySlot.Add(RemovedItem, NewData);
+			UE_LOG(LogTemp, Warning, TEXT("Controller::RemoveItemFromSlottedItems(InventorySlot.Num = %d)"), InventorySlot.Num());
+		}
+	}
+	else
+	{
+		// Remove item entirely, make sure it is unslotted
+		if (RemovedItem->ItemType == UShooterAssetManager::WeaponItemType)
+		{
+			WeaponSlot.Remove(RemovedItem);
+			UE_LOG(LogTemp, Warning, TEXT("Controller::RemoveItemFromSlottedItems(WeaponSlot.Num = %d)"), WeaponSlot.Num());
+		}
+		else if (RemovedItem->ItemType == UShooterAssetManager::SkillItemType)
+		{
+			AbilitySlot.Remove(RemovedItem);
+			UE_LOG(LogTemp, Warning, TEXT("Controller::RemoveItemFromSlottedItems(AbilitySlot.Num = %d)"), AbilitySlot.Num());
+		}
+		else
+		{
+			// If data changed, need to update storage and call callback
+			InventorySlot.Remove(RemovedItem);
+			UE_LOG(LogTemp, Warning, TEXT("Controller::RemoveItemFromSlottedItems(InventorySlot.Num = %d)"), InventorySlot.Num());
+		}
+		for (TPair<FShooterItemSlot, UShooterItem*>& Pair : SlottedItems)
+		{
+			if (Pair.Value == RemovedItem)
+			{
+				Pair.Value = nullptr;
+				NotifySlottedItemChanged(Pair.Key, Pair.Value);
+				ClientReceivePurchaseEvent(Pair.Key, NewData, RemovedItem, false);
+			}
+		}
+	}
+}
+
 TArray<UShooterItem*> AShooterPlayerController::GetInventoryItemList(FPrimaryAssetType ItemType) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemList(InventoryData.Num : %d)"), InventoryData.Num());
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemList(InventorySlot.Num : %d)"), InventorySlot.Num());
 	TArray<UShooterItem*> Items;
 	Items.Reset(10);
-	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventoryData)
+	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventorySlot)
 	{
 		if (Pair.Key->ItemType == ItemType)
 		{
@@ -1588,9 +1905,9 @@ TArray<UShooterItem*> AShooterPlayerController::GetInventoryItemList(FPrimaryAss
 
 int32 AShooterPlayerController::GetInventoryItemListCount() const
 {
-	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemListCount(InventoryData.Num : %d)"), InventoryData.Num());
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemListCount(InventorySlot.Num : %d)"), InventorySlot.Num());
 	TArray<UShooterItem*> ItemList;
-	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventoryData)
+	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventorySlot)
 	{
 		if (Pair.Key)
 		{
@@ -1602,8 +1919,8 @@ int32 AShooterPlayerController::GetInventoryItemListCount() const
 
 void AShooterPlayerController::GetInventoryItems(TArray<UShooterItem*>& Items, FPrimaryAssetType ItemType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItems(InventoryData.Num : %d)"), InventoryData.Num());
-	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventoryData)
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItems(InventorySlot.Num : %d)"), InventorySlot.Num());
+	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventorySlot)
 	{
 		if (Pair.Key)
 		{
@@ -1649,21 +1966,10 @@ bool AShooterPlayerController::SetSlottedItem(FShooterItemSlot ItemSlot, UShoote
 	return false;
 }
 
-bool AShooterPlayerController::HasItem(UShooterItem* Item) const
-{
-	const FShooterItemData* FoundItem = InventoryData.Find(Item);
-
-	if (FoundItem)
-	{
-		return true;
-	}
-	return false;
-}
-
 int32 AShooterPlayerController::GetInventoryItemCount(UShooterItem* Item) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemCount(InventoryData.Num : %d)"), InventoryData.Num());
-	const FShooterItemData* FoundItem = InventoryData.Find(Item);
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemCount(InventorySlot.Num : %d)"), InventorySlot.Num());
+	const FShooterItemData* FoundItem = InventorySlot.Find(Item);
 
 	if (FoundItem)
 	{
@@ -1674,14 +1980,17 @@ int32 AShooterPlayerController::GetInventoryItemCount(UShooterItem* Item) const
 
 bool AShooterPlayerController::GetInventoryItemData(UShooterItem* Item, FShooterItemData& ItemData) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemData(InventoryData.Num : %d)"), InventoryData.Num());
-	const FShooterItemData* FoundItem = InventoryData.Find(Item);
-
-	if (FoundItem)
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemData(InventorySlot.Num : %d)"), InventorySlot.Num());
+	if (InventorySlot.Num()>0)
 	{
-		ItemData = *FoundItem;
-		UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemData(ItemData.ItemCount : %d)"), ItemData.ItemCount);
-		return true;
+		const FShooterItemData* FoundItem = InventorySlot.Find(Item);
+
+		if (FoundItem)
+		{
+			ItemData = *FoundItem;
+			UE_LOG(LogTemp, Warning, TEXT("Controller::GetInventoryItemData(ItemData.ItemCount : %d)"), ItemData.ItemCount);
+			return true;
+		}
 	}
 	ItemData = FShooterItemData(0, 0);
 	return false;
@@ -1735,7 +2044,7 @@ void AShooterPlayerController::FillEmptySlots()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::FillEmptySlots()"));
 	bool bShouldSave = false;
-	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventoryData)
+	for (const TPair<UShooterItem*, FShooterItemData>& Pair : InventorySlot)
 	{
 		bShouldSave |= FillEmptySlotWithItem(Pair.Key);
 	}
@@ -1744,6 +2053,124 @@ void AShooterPlayerController::FillEmptySlots()
 	{
 		SaveInventory();
 	}
+}
+
+/*
+const TArray<TSharedPtr<FShooterAssetEntry>>* AShooterPlayerController::GetStoreCategory()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetStoreCategory()"));
+	TArray<UShooterItem*> FindItems;
+	Categories.Reset();
+	FShooterAssetEntry AssetEntry;
+	FPrimaryAssetId AssetId = FPrimaryAssetId(UShooterAssetManager::CategoryItemType, UShooterAssetManager::CategoryItemType.GetName());
+	FindStoreAssetsByID(AssetId, FindItems);
+	if (FindItems.Num()>0)
+	{	
+		for (UShooterItem* Item : FindItems)
+		{
+			//TSharedPtr<FSlateBrush*> IconBrush = MakeShareable(new FShooterImageBrush(Item->IconPath, FVector2D(64, 64)));
+			UE_LOG(LogTemp, Warning, TEXT("Controller::GetStoreCategory(Item.Name = %s)"), &Item->ItemName.ToString());
+			AssetEntry.Init(AssetId, Item->ItemName, Item->ItemName, Item->IconPath, nullptr, FShooterImageBrush(Item->IconPath, FVector2D(64, 64)), FShooterImageBrush(Item->IconPath, FVector2D(64, 64)));
+			
+			//UE_LOG(LogTemp, Warning, TEXT("Controller::GetStoreCategory(AssetEntry.Name = %s)"), AssetEntry.Name.ToString());
+			//Categories.Add(MakeShareable(AssetEntry));
+		}
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetStoreCategory(Categories.Num = %d)"), Categories.Num());
+	return &Categories;
+}
+*/
+bool AShooterPlayerController::FindStoreAssetsByID(FPrimaryAssetId InAssetId, TArray<UShooterItem*>& OutItems)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::FindStoreAssetsByID()"));
+
+	// Fill in slots from game instance
+	UWorld* World = GetWorld();
+	UShooterGameInstance* GameInstance = World ? World->GetGameInstance<UShooterGameInstance>() : nullptr;
+
+	if (!GameInstance)
+	{
+		return false;
+	}
+
+	UShooterSaveGame* CurrentSaveGame = GameInstance->GetCurrentSaveGame();
+	UShooterAssetManager& AssetManager = UShooterAssetManager::Get();
+	if (CurrentSaveGame)
+	{
+		// Copy from save game into controller data
+		for (auto AssetEntry : CurrentSaveGame->AssetSources)
+		{
+			if (AssetEntry.AssetCategory.PrimaryAssetType == InAssetId.PrimaryAssetType)
+			{
+				TArray<class UShooterItem*> LoadedItems = AssetEntry.AssetItems;
+				for (auto Item : LoadedItems)
+				{
+					UShooterItem* LoadedItem = AssetManager.ForceLoadItem(Item->GetPrimaryAssetId());
+
+					if (LoadedItem != nullptr)
+					{
+						OutItems.Add(LoadedItem);
+					}
+				}
+			}
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Controller::FindStoreAssetsByID(OutItems.Num = %d)"), OutItems.Num());
+		return true;
+	}
+
+	return false;
+}
+
+/*
+bool AShooterPlayerController::LoadStoreItemSource()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::LoadStoreItemSource()"));
+
+	// Fill in slots from game instance
+	UWorld* World = GetWorld();
+	UShooterGameInstance* GameInstance = World ? World->GetGameInstance<UShooterGameInstance>() : nullptr;
+
+	if (!GameInstance)
+	{
+		return false;
+	}
+
+	UShooterSaveGame* CurrentSaveGame = GameInstance->GetCurrentSaveGame();
+	UShooterAssetManager& AssetManager = UShooterAssetManager::Get();
+	if (CurrentSaveGame)
+	{
+		// Copy from save game into controller data
+	/*	for (auto AssetEntry : CurrentSaveGame->AssetSources)
+		{
+			if (AssetEntry.AssetCategory.PrimaryAssetType == InAssetId.PrimaryAssetType)
+			{
+				TArray<class UShooterItem*> LoadedItems = AssetEntry.AssetItems;
+				for (auto Item : LoadedItems)
+				{
+					UShooterItem* LoadedItem = AssetManager.ForceLoadItem(Item->GetPrimaryAssetId());
+
+					if (LoadedItem != nullptr)
+					{
+						OutItems.Add(LoadedItem);
+					}
+				}
+			}
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Controller::FindStoreAssetsByID(OutItems.Num = %d)"), OutItems.Num());
+		return true;
+		
+	}
+
+	return false;
+}*/
+
+bool AShooterPlayerController::SaveStore()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::SaveStore()"));
+
+	return true;
 }
 
 bool AShooterPlayerController::SaveInventory()
@@ -1764,7 +2191,7 @@ bool AShooterPlayerController::SaveInventory()
 		CurrentSaveGame->AssetDataSource.Reset();
 		CurrentSaveGame->SlottedItems.Reset();
 
-		for (const TPair<UShooterItem*, FShooterItemData>& ItemPair : InventoryData)
+		for (const TPair<UShooterItem*, FShooterItemData>& ItemPair : InventorySlot)
 		{
 			FPrimaryAssetId AssetId;
 
@@ -1796,8 +2223,8 @@ bool AShooterPlayerController::SaveInventory()
 bool AShooterPlayerController::LoadInventory()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::LoadInventory()"));
-	InventoryData.Reset();
-	SlottedItems.Reset();
+	//InventorySlot.Reset();
+	//SlottedItems.Reset();
 
 	// Fill in slots from game instance
 	UWorld* World = GetWorld();
@@ -1828,7 +2255,7 @@ bool AShooterPlayerController::LoadInventory()
 
 			if (LoadedItem != nullptr)
 			{
-				InventoryData.Add(LoadedItem, ItemPair.Value);
+				InventorySlot.Add(LoadedItem, ItemPair.Value);
 			}
 		}
 
@@ -1870,17 +2297,18 @@ bool AShooterPlayerController::FillEmptySlotWithItem(UShooterItem* NewItem)
 	FShooterItemSlot EmptySlot;
 	for (TPair<FShooterItemSlot, UShooterItem*>& Pair : SlottedItems)
 	{
-		if (Pair.Key.ItemType == NewItemType)
+		FShooterItemSlot itemSlot = Pair.Key;
+		if (itemSlot.ItemType == NewItemType)
 		{
 			if (Pair.Value == NewItem)
 			{
 				// Item is already slotted
 				return false;
 			}
-			else if (Pair.Value == nullptr && (!EmptySlot.IsValid() || EmptySlot.SlotNumber > Pair.Key.SlotNumber))
+			else if (Pair.Value == nullptr && (!EmptySlot.IsValid() || EmptySlot.SlotNumber > itemSlot.SlotNumber))
 			{
 				// We found an empty slot worth filling
-				EmptySlot = Pair.Key;
+				EmptySlot = itemSlot;
 			}
 		}
 	}
@@ -1901,29 +2329,13 @@ bool AShooterPlayerController::FillEmptySlotWithItem(UShooterItem* NewItem)
 	return false;
 }
 
-
-void AShooterPlayerController::OnInventoryItemChange_Implementation(UShooterItem* item, bool bAdded)
+void AShooterPlayerController::OnInventoryItemChange(UShooterItem* item, bool bAdded)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Controller::OnInventoryItemChange_Implementation()"));
 	UE_LOG(LogTemp, Warning, TEXT("Controller::OnInventoryItemChange_Implementation(%s)"), *FString::Printf(TEXT("bAdded = %s"), bAdded == true ? TEXT("true") : TEXT("false")));
-	if (item->ItemType == UShooterAssetManager::TokenItemType)
-	{
-		int32 SoulsCount = GetInventoryItemCount(item);
-		OnInventorySoulsChangedNative.Broadcast(SoulsCount);
-	}
-	if (bAdded)
-	{
-		AShooterCharacter* pawn = Cast<AShooterCharacter>(GetCharacter());
-		if (item->ItemType == UShooterAssetManager::WeaponItemType)
-		{
-			pawn->UpdateInventoryActors(item, true);
-			//pawn->SpawnPropsActors();
-		}
-	}
-	else
-	{
-		RemoveInventoryItem(item, 1);
-	}
+	//if (CurrentPurchaseItem)
+	//{
+		//UpdateInventoryItem(CurrentPurchaseItem, bAdded);
+	//}
 }
 
 void AShooterPlayerController::OnItemSlotChanged_Implementation(FShooterItemSlot ItemSlot, UShooterItem* item)
@@ -1976,6 +2388,7 @@ void AShooterPlayerController::BeginPlay()
 
 void AShooterPlayerController::Possess(APawn* NewPawn)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Controller::Possess()"));
 	Super::Possess(NewPawn);
 
 	// Notify blueprint about the possession, only if it is valid
@@ -1984,10 +2397,19 @@ void AShooterPlayerController::Possess(APawn* NewPawn)
 	{
 		ReceivePossess(NewPawn);
 	}
+
+}
+
+void AShooterPlayerController::ReceivePossess_Implementation(APawn* NewPawn)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::ReceivePossess_Implementation()"));
+
+	//ShowPlayerDashboard();
 }
 
 void AShooterPlayerController::UnPossess()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Controller::UnPossess()"));
 	APawn* PreviousPawn = GetPawn();
 
 	if (PreviousPawn)
@@ -1999,116 +2421,221 @@ void AShooterPlayerController::UnPossess()
 	Super::UnPossess();
 }
 
-/************************* Store UI widgets *****************************/
+void AShooterPlayerController::ReceiveUnPossess_Implementation(APawn* NewPawn)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::ReceiveUnPossess_Implementation()"));
 
-void AShooterPlayerController::ShowStoreWidget()
-{	
+}
+
+/************************* HUD UI widgets *****************************/
+
+UShooterPlayerView* AShooterPlayerController::GetPlayerDashboard() const
+{
+	//check(PlayerDashboardContainer);
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetPlayerDashboard()"));
+	if (PlayerDashboard)
+	{
+		return PlayerDashboard;
+	}
+	return nullptr;
+}
+
+UShooterTargetPlayer* AShooterPlayerController::GetPlayerTarget() const
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetPlayerTarget()"));
+	if (PlayerTarget)
+	{
+		return PlayerTarget;
+	}
+	return nullptr;
+}
+
+UShooterTeamBar* AShooterPlayerController::GetTeamBar() const
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::GetTeamBar()"));
+	if (TeamBar)
+	{
+		return TeamBar;
+	}
+	return nullptr;
+}
+
+void AShooterPlayerController::ShowPlayerDashboard()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::ShowPlayerDashboard()"));
+	
+	if (!PlayerBoardWidgetClass)
+	{
+		return;
+	}
+
+	PlayerDashboard = CreateWidget<UShooterPlayerView>(GetWorld(), PlayerBoardWidgetClass);
+	PlayerDashboard->SetOwningPlayer(this);
+
+	//PlayerDashboard->GetInventoryWidget()->WeaponSlotChangedDelegate.AddDynamic(this, &AShooterPlayerController::OnInventoryItemChange);
+
+	PlayerDashboard->InitWidget();
+
+	if (PlayerDashboard != nullptr)
+	{
+		SAssignNew(PlayerboardOverlay, SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Center)
+			.VAlign(EVerticalAlignment::VAlign_Bottom)
+			[
+				SNew(SBox)
+				.HeightOverride(230)
+				.WidthOverride(768)
+				[
+					PlayerDashboard->TakeWidget()
+				]
+			];
+	}
+	if (PlayerboardOverlay)
+	{
+		GEngine->GameViewport->AddViewportWidgetForPlayer(GetLocalPlayer(), PlayerboardOverlay.ToSharedRef(), 1);
+		//GEngine->GameViewport->AddViewportWidgetContent(PlayerboardOverlay.ToSharedRef(), 1);
+	}
+}
+
+void AShooterPlayerController::ShowTeamBar()
+{
+	if (!TeamBarWidgetClass)
+	{
+		return;
+	}
+
+	TeamBar = CreateWidget<UShooterTeamBar>(this, TeamBarWidgetClass);
+
+	//check(TeamBar);
+
+	SAssignNew(TeamBarOverlay, SOverlay)
+	+ SOverlay::Slot()
+	.HAlign(EHorizontalAlignment::HAlign_Center)
+	.VAlign(EVerticalAlignment::VAlign_Top)
+	[
+		SNew(SBox)
+		.WidthOverride(820)
+		.HeightOverride(80)
+		[
+			TeamBar->TakeWidget()
+		]
+	];
+
+	if (TeamBarOverlay)
+	{
+		GEngine->GameViewport->AddViewportWidgetContent(TeamBarOverlay.ToSharedRef(), 1);
+	}
+}
+
+void AShooterPlayerController::ShowPlayerTarget()
+{
+	if (!PlayerTargetWidgetClass)
+	{
+		return;
+	}
+
+	PlayerTarget = CreateWidget<UShooterTargetPlayer>(this, PlayerTargetWidgetClass);
+
+	//check(PlayerTarget);
+
+	SAssignNew(PlayerTargetOverlay, SOverlay)
+	+ SOverlay::Slot()
+	.HAlign(EHorizontalAlignment::HAlign_Left)
+	.VAlign(EVerticalAlignment::VAlign_Center)
+	[
+		SNew(SBox)
+		.WidthOverride(200)
+		.HeightOverride(230)
+		.Padding(10)
+		[
+			PlayerTarget->TakeWidget()
+		]
+	];
+
+	if (PlayerTargetOverlay)
+	{
+		GEngine->GameViewport->AddViewportWidgetContent(PlayerTargetOverlay.ToSharedRef(), 1);
+	}
+}
+
+void AShooterPlayerController::OnToggleStoreboard()
+{
 	if (StoreWidgetClass && !bStoreVisible)
 	{
+		TArray<UShooterItem*> FindItems;
+		TArray<UShooterItem*> ContentItems;
+		FPrimaryAssetId AssetId = FPrimaryAssetId(UShooterAssetManager::CategoryItemType, UShooterAssetManager::CategoryItemType.GetName());
+		FindStoreAssetsByID(AssetId, FindItems);
+		UShooterCategoryItem* CategoryItem = Cast<UShooterCategoryItem>(FindItems[0]);
+		FPrimaryAssetId CategoryId = FPrimaryAssetId(CategoryItem->Category.Type, CategoryItem->Category.Type.GetName());
+		FindStoreAssetsByID(CategoryId, ContentItems);
+
 		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("CreateWidgetInstance()"));
-		StoreWidgetIns = CreateWidget<UUserWidget>(this, StoreWidgetClass);
-		check(StoreWidgetIns);
+		const FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
+		FVector2D ViewMargin = ViewportSize / 8;
 
-		//StoreWidgetIns->
+		StoreBoard = CreateWidget<UShooterStore>(this, StoreWidgetClass);
 
-		 if (StoreWidgetIns)
-		 {
-			 //GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("StoreWidgetInstance"));
-			 bShowMouseCursor = true;
-			 bStoreVisible = true;
-			 GEngine->GameViewport->AddViewportWidgetContent(StoreWidgetIns->TakeWidget(), 10);
-		 }
+		check(StoreBoard);
+		StoreBoard->SetCategoryItem(FindItems);
+		StoreBoard->SetCurrentCategory(FindItems[0]);
+		StoreBoard->SetContentItem(ContentItems);
+		StoreBoard->SetCurrentContent(ContentItems[0]);
+		StoreBoard->SetSelectedContentCategory(FindItems[0]);
+
+		StoreboardContainer = SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Fill)
+			.VAlign(EVerticalAlignment::VAlign_Fill)
+			.Padding(ViewMargin)
+			[
+				StoreBoard->TakeWidget()
+			];
+
+
+		if (StoreboardContainer)
+		{
+			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("StoreWidgetInstance"));
+			bShowMouseCursor = true;
+			bStoreVisible = true;
+			GEngine->GameViewport->AddViewportWidgetContent(StoreboardContainer.ToSharedRef(), 10);
+		}
 	}
-	else 
+	else
 	{
-		CloseStoreWidget();
+		CloseStoreBoard();
 	}
-	//UWorld* World = GetWorld();
-	//UShooterGameInstance* GameInstance = World ? World->GetGameInstance<UShooterGameInstance>() : nullptr;
 }
 
-
-void AShooterPlayerController::CloseStoreWidget()
+void AShooterPlayerController::CloseStoreBoard()
 {
-	if (StoreWidgetIns && bStoreVisible)
+	check(StoreBoard);
+	if (bStoreVisible)
 	{
+		StoreBoard->DeSelectedAll();
 		bShowMouseCursor = false;
 		bStoreVisible = false;
-		GEngine->GameViewport->RemoveViewportWidgetContent(StoreWidgetIns->TakeWidget());
+		GEngine->GameViewport->RemoveViewportWidgetContent(StoreboardContainer.ToSharedRef());
 	}
 }
 
 
-bool AShooterPlayerController::SellItem(UShooterItem* Item)
+void AShooterPlayerController::SellItem(UShooterItem* Item)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::SellItem()"));
 	if (Item)
 	{
 		int32 Price = GetInventoryItemCount(Item);
 		AddSouls(Price);
-		return UpdateInventoryItem(Item, false);
+		UpdateInventoryItem(Item, false);
 	}
-	return false;
 }
 
 void AShooterPlayerController::AddSouls(int32 Price)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::AddSouls()"));
 	AddInventoryItem(SoulsItem, Price);
-}
-
-bool AShooterPlayerController::CanPurchaseItem(UShooterItem* Item)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Controller::CanPurchaseItem()"));
-	if (!HasItem(Item) && Item->Price >= GetInventoryItemCount(SoulsItem))
-	{
-		return true;
-	}
-	return false;
-}
-
-bool AShooterPlayerController::PurchaseItem(UShooterItem* Item)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Controller::PurchaseItem()"));
-	switch (Role)
-	{
-	case ENetRole::ROLE_Authority:
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_Authority"));
-		break;
-	case ENetRole::ROLE_AutonomousProxy:
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
-		break;
-	case ENetRole::ROLE_SimulatedProxy:
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_SimulatedProxy"));
-		break;
-	default:
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
-		break;
-	}
-	if (Item && CanPurchaseItem(Item))
-	{
-		if (HasAuthority())
-		{
-			return UpdateInventoryItem(Item, true);
-		}
-		else 
-		{
-			ServerPurchaseItem(Item);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool AShooterPlayerController::ServerPurchaseItem_Validate(UShooterItem* Item)
-{
-	return true;
-}
-
-void AShooterPlayerController::ServerPurchaseItem_Implementation(UShooterItem* Item)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Controller::ServerPurchaseItem_Implementation()"));
-	PurchaseItem(Item);
 }
 
 void AShooterPlayerController::FindImageComponents()

@@ -25,13 +25,28 @@ class SHOOTERGAME_API IShooterInventoryInterface
 
 public:
 	/** Returns the map of items to data */
-	virtual const TMap<UShooterItem*, FShooterItemData>& GetInventoryDataMap() const = 0;
+	virtual const TMap<UShooterItem*, FShooterItemData>& GetInventorySlotMap() const = 0;
+
+	/** Returns the map of slots to items */
+	virtual const TMap<UShooterItem*, FShooterItemData>& GetWeaponItemMap() const = 0;
+
+	/** Returns the map of slots to items */
+	virtual const TMap<UShooterItem*, FShooterItemData>& GetAbilityItemMap() const = 0;
 
 	/** Returns the map of slots to items */
 	virtual const TMap<FShooterItemSlot, UShooterItem*>& GetSlottedItemMap() const = 0;
 
 	/** Gets the delegate for inventory item changes */
-	virtual FOnInventoryItemChangedNative& GetInventoryItemChangedDelegate() = 0;
+	virtual FOnInventoryItemChangedNative& GetInventoryItemChangedNativeDelegate() = 0;
+
+	/** Gets the delegate for inventory item changes */
+	virtual FOnInventoryItemChanged& GetInventoryItemChangedDelegate() = 0;
+
+	/** Gets the delegate for Store Category item changes */
+	virtual FOnStoreCategoryChangedNative& GetStoreCategoryChangedDelegate() = 0;
+
+	/** Gets the delegate for Store Content item changes */
+	virtual FOnStoreContentChangedNative& GetStoreContentChangedDelegate() = 0;
 
 	/** Gets the delegate for inventory item changes */
 	//virtual FOnInventorySoulsChangedNative& GetInventorySoulsChangedDelegate() = 0;

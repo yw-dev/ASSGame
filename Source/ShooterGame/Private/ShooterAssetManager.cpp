@@ -4,6 +4,7 @@
 #include "Items/ShooterItem.h"
 #include "ShooterAssetManager.h"
 
+const FPrimaryAssetType	UShooterAssetManager::CategoryItemType = TEXT("Category");
 const FPrimaryAssetType	UShooterAssetManager::PotionItemType = TEXT("Potion");
 const FPrimaryAssetType	UShooterAssetManager::SkillItemType = TEXT("Skill");
 const FPrimaryAssetType	UShooterAssetManager::TokenItemType = TEXT("Token");

@@ -6,7 +6,6 @@
 #include "SChatWidget.h"
 #include "Player/SShooterPlayerWidget.h"
 #include "Map/SShooterMapWidget.h"
-#include "Store/SShooterStoreWidget.h"
 #include "Engine/ViewportSplitScreen.h"
 #include "ShooterAssetManager.h"
 #include "Weapons/ShooterWeapon.h"
@@ -24,6 +23,8 @@ const float AShooterHUD::MinHudScale = 0.5f;
 
 AShooterHUD::AShooterHUD(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+	bMessageVisible = false;
+	TipDeltaTime = 5;
 	NoAmmoFadeOutTime =  1.0f;
 	HitNotifyDisplayTime = 0.75f;
 	KillFadeOutTime = 2.0f;
@@ -31,9 +32,26 @@ AShooterHUD::AShooterHUD(const FObjectInitializer& ObjectInitializer) : Super(Ob
 	NoAmmoNotifyTime = -NoAmmoFadeOutTime;
 	LastKillTime = - KillFadeOutTime;
 	LastEnemyHitTime = -LastEnemyHitDisplayTime;
+	//CurrentMessage = FText();
 
+	//Viewport Size
+	//ViewportSize = FVector2D(GetWorld()->GameViewport->Viewport->GetSizeXY());
+	//GetWorld()->GetGameViewport()->GetViewportSize(ViewportSize);
 	OnPlayerTalkingStateChangedDelegate = FOnPlayerTalkingStateChangedDelegate::CreateUObject(this, &AShooterHUD::OnPlayerTalkingStateChanged);
 
+	//StoreWidgetClass = LoadClass<UShooterStore>(NULL, TEXT("/Game/Blueprints/WidgetBP/BP_Store.BP_Store_C"));
+	static ConstructorHelpers::FClassFinder<UShooterStore> WidgetClass(TEXT("/Game/Blueprints/WidgetBP/BP_Store"));
+	if (WidgetClass.Class != NULL)
+	{
+		StoreWidgetClass = WidgetClass.Class;
+		StoreWidget = CreateWidget<UShooterStore>(GetWorld(), StoreWidgetClass);
+	}
+	static ConstructorHelpers::FClassFinder<UShooterPlayerView> PlayerBoardWidgetClass(TEXT("/Game/Blueprints/WidgetBP/BP_PlayerDashboard"));
+	if (PlayerBoardWidgetClass.Class != NULL)
+	{
+		//StoreWidgetClass = PlayerBoardWidgetClass.Class;
+		PlayerDashboard = CreateWidget<UShooterPlayerView>(GetWorld(), PlayerBoardWidgetClass.Class);
+	}
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HitTextureOb(TEXT("/Game/UI/HUD/HitIndicator"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HUDMainTextureOb(TEXT("/Game/UI/HUD/HUDMain"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HUDAssets02TextureOb(TEXT("/Game/UI/HUD/HUDAssets02"));
@@ -636,8 +654,8 @@ void AShooterHUD::DrawHUD()
 
 	// Render the info messages such as wating to respawn - these will be drawn below any 'killed player' message.
 	ShowInfoItems(MessageOffset, 1.0f); 
-	ShowPlayerboard();
 	ShowMapboard();
+
 }
 
 void AShooterHUD::DrawDebugInfoString(const FString& Text, float PosX, float PosY, bool bAlignLeft, bool bAlignTop, const FColor& TextColor)
@@ -842,6 +860,128 @@ void AShooterHUD::DrawDeathMessages()
 	}
 }
 
+const FText& AShooterHUD::GetCurrentMessage() const
+{
+	return CurrentMessage;
+}
+
+void AShooterHUD::ShowTipMessage()
+{
+	if (GetCurrentMessage().IsEmpty())
+	{
+		return;
+	}
+	if (!bMessageVisible)
+	{
+		//TSharedPtr<class SOverlay> MessageOverlay;
+			//CurrentMessage = NewMessage;
+
+		SAssignNew(MessageOverlay, SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Center)
+			.VAlign(EVerticalAlignment::VAlign_Center)
+			.Padding(10)
+			[
+				SNew(STextBlock).Text(GetCurrentMessage()).TextStyle(FShooterStyle::Get(), "ShooterGame.MenuButtonTextStyle")
+			];
+		//SAssignNew(MessageText, STextBlock).Text(GetCurrentMessage());
+		if (MessageOverlay.IsValid())
+		{
+			bMessageVisible = true;
+			GEngine->GameViewport->AddViewportWidgetForPlayer(PlayerOwner->GetLocalPlayer(), MessageOverlay.ToSharedRef(), 0);
+		}
+	}
+	--TipDeltaTime;
+	if (TipDeltaTime <= 0 && bMessageVisible && MessageOverlay.IsValid())
+	{
+		bMessageVisible = false;
+		GEngine->GameViewport->RemoveViewportWidgetForPlayer(PlayerOwner->GetLocalPlayer(), MessageOverlay.ToSharedRef());
+		GetWorldTimerManager().ClearTimer(TimerHandle_Message);
+	}
+}
+
+void AShooterHUD::ShowPurchaseFailureMessage(const FText& NewMessage, class UShooterItem* NewItem)
+{
+	TipDeltaTime = 5;
+	if (GetWorld()->GetGameState())
+	{
+		CurrentMessage = NewMessage;
+		/*
+		SAssignNew(MessageOverlay, SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Center)
+			.VAlign(EVerticalAlignment::VAlign_Center)
+			.Padding(10)
+			[
+				SNew(STextBlock).Text(Message)
+			];
+		*/
+		//FTimerHandle MessageHandle;
+		//FTimerDelegate MessageDelegate = FTimerDelegate::CreateUObject(this, &AShooterHUD::ShowTipMessage, Message);
+		GetWorldTimerManager().SetTimer(TimerHandle_Message, this, &AShooterHUD::ShowTipMessage, GetWorldSettings()->GetEffectiveTimeDilation(), true);
+	}
+}
+
+void AShooterHUD::RefreshSlottedItems(const FShooterItemSlot& NewSlot, const FShooterItemData& NewData, class UShooterItem* NewItem, bool bAdd)
+{
+	if (bAdd == true)
+	{
+		SlottedItems.Add(NewSlot, NewItem);
+	}
+	else 
+	{
+		if (NewData.ItemCount <= 0)
+		{
+			for (TPair<FShooterItemSlot, UShooterItem*>& Pair : SlottedItems)
+			{
+				if (Pair.Value == NewItem)
+				{
+					Pair.Value = nullptr;
+				}
+			}
+		}
+	}
+}
+
+void AShooterHUD::RefreshInventoryByMessage(const FShooterItemSlot& NewItemSlot, const FShooterItemData& NewItemData, class UShooterItem* Item, bool bAdd)
+{
+	if (GetWorld()->GetGameState())
+	{
+		RefreshSlottedItems(NewItemSlot, NewItemData, Item, bAdd);
+		const AShooterGameMode* DefGame = GetWorld()->GetGameState()->GetDefaultGameMode<AShooterGameMode>();
+		AShooterPlayerController* PC = Cast<AShooterPlayerController>(PlayerOwner);
+		AShooterPlayerState* MyPlayerState = PlayerOwner ? Cast<AShooterPlayerState>(PlayerOwner->PlayerState) : NULL;
+
+		if (PC && PlayerDashboard && DefGame && Item && MyPlayerState)
+		{
+			if (MyPlayerState)
+			{
+				//PlayerDashboard->GetInventoryWidget()->SetCoins(FText::AsNumber(MyPlayerState->GetNumCoins()));
+				//PlayerDashboard->GetInventoryWidget()->UpdateInventory(SlottedItems);
+				PlayerDashboard->UpdatePlayerView(SlottedItems, Item->ItemType);
+			}
+		}
+	}
+}
+
+void AShooterHUD::RefreshInventoryWidget(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* VictimPlayerState, const UDamageType* KillerDamageType)
+{
+	if (GetWorld()->GetGameState())
+	{
+		const AShooterGameMode* DefGame = GetWorld()->GetGameState()->GetDefaultGameMode<AShooterGameMode>();
+		AShooterPlayerState* MyPlayerState = PlayerOwner ? Cast<AShooterPlayerState>(PlayerOwner->PlayerState) : NULL;
+
+		if (PlayerDashboard && DefGame && KillerPlayerState && VictimPlayerState && MyPlayerState)
+		{
+			if (KillerPlayerState == MyPlayerState && VictimPlayerState != MyPlayerState)
+			{
+				PlayerDashboard->GetInventoryWidget()->SetCoins(FText::AsNumber(MyPlayerState->GetNumCoins()));
+			}
+		}
+	}
+	
+}
+
 void AShooterHUD::ShowDeathMessage(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* VictimPlayerState, const UDamageType* KillerDamageType)
 {
 	const int32 MaxDeathMessages = 5;
@@ -876,6 +1016,7 @@ void AShooterHUD::ShowDeathMessage(class AShooterPlayerState* KillerPlayerState,
 				LastKillTime = GetWorld()->GetTimeSeconds();
 				CenteredKillMessage = FText::FromString(NewMessage.VictimDesc);
 			}
+			//RefreshInventoryWidget(KillerPlayerState, VictimPlayerState, KillerDamageType);
 		}
 	}
 }
@@ -968,6 +1109,16 @@ void AShooterHUD::OnPlayerTalkingStateChanged(TSharedRef<const FUniqueNetId> Tal
 	}
 }
 
+void AShooterHUD::OnInventoryItemChanged(UShooterItem* NewItem, bool bAdd)
+{
+	UE_LOG(LogTemp, Warning, TEXT("HUD::OnInventoryItemChanged()"));
+	if (PlayerDashboard != nullptr)
+	{
+		//PlayerDashboard->GetInventoryWidget()->WeaponSlotChangedDelegate.Broadcast(NewItem, bAdd);
+	}
+
+}
+
 void AShooterHUD::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -984,6 +1135,11 @@ void AShooterHUD::PostInitializeComponents()
 		{
 			Voice->AddOnPlayerTalkingStateChangedDelegate_Handle(OnPlayerTalkingStateChangedDelegate);
 		}
+	}
+	if (PlayerOwner)
+	{
+		AShooterPlayerController* ShooterPC = Cast<AShooterPlayerController>(PlayerOwner);
+		ShooterPC->GetInventoryItemChangedNativeDelegate().AddUObject(this, &AShooterHUD::OnInventoryItemChanged);
 	}
 }
 
@@ -1002,6 +1158,7 @@ void AShooterHUD::ToggleScoreboard()
 
 bool AShooterHUD::ShowScoreboard(bool bEnable, bool bFocus)
 {
+	UE_LOG(LogTemp, Warning, TEXT("AShooterHUD::ShowScoreboard()"));
 	if( bIsScoreBoardVisible == bEnable)
 	{
 		// if the scoreboard is already enabled, disable it in favour of the new request
@@ -1067,115 +1224,52 @@ bool AShooterHUD::ShowScoreboard(bool bEnable, bool bFocus)
 	return true;
 }
 
-void AShooterHUD::ToggleStoreboard()
+void AShooterHUD::ShowPlayerDashboard()
 {
-	ShowStoreboard(!bIsStoreBoardVisible);
-}
+	UE_LOG(LogTemp, Warning, TEXT("HUD::ShowPlayerDashboard()"));
 
-void AShooterHUD::ShowPlayerboard()
-{
-	SAssignNew(PlayerboardOverlay, SOverlay)
-		+ SOverlay::Slot()
-		.HAlign(EHorizontalAlignment::HAlign_Center)
-		.VAlign(EVerticalAlignment::VAlign_Bottom)
-		[
-			SAssignNew(PlayerboardWidget, SShooterPlayerWidget)
-			.Cursor(EMouseCursor::Default)
-			.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
-			.MatchState(GetMatchState())
-		];
+	if (PlayerDashboard != nullptr)
+	{
+		PlayerDashboard->SetOwningPlayer(PlayerOwner);
+		PlayerDashboard->InitWidget();
 
-	GEngine->GameViewport->AddViewportWidgetContent(
-		SAssignNew(PlayerboardContainer, SWeakWidget)
-		.PossiblyNullContent(PlayerboardOverlay));
+		SAssignNew(PlayerboardOverlay, SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Center)
+			.VAlign(EVerticalAlignment::VAlign_Bottom)
+			[
+				SNew(SBox)
+				.HeightOverride(230)
+				.WidthOverride(768)
+				[
+					PlayerDashboard->TakeWidget()
+				]
+			];
+	}
 
+	if (PlayerboardOverlay)
+	{
+		GEngine->GameViewport->AddViewportWidgetForPlayer(PlayerOwner->GetLocalPlayer(), PlayerboardOverlay.ToSharedRef(), 1);
+	}
 }
 
 void AShooterHUD::ShowMapboard()
 {
 	SAssignNew(MapboardOverlay, SOverlay)
-		+ SOverlay::Slot()
-		.HAlign(EHorizontalAlignment::HAlign_Right)
-		.VAlign(EVerticalAlignment::VAlign_Bottom)
-		[
-			SAssignNew(MapboardWidget, SShooterMapWidget)
-			.Cursor(EMouseCursor::Default)
-			.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
-			.MatchState(GetMatchState())
-		];
+	+ SOverlay::Slot()
+	.HAlign(EHorizontalAlignment::HAlign_Right)
+	.VAlign(EVerticalAlignment::VAlign_Bottom)
+	[
+		SAssignNew(MapboardWidget, SShooterMapWidget)
+		.Cursor(EMouseCursor::Default)
+		.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
+		.MatchState(GetMatchState())
+	];
 
 	GEngine->GameViewport->AddViewportWidgetContent(
 		SAssignNew(MapboardContainer, SWeakWidget)
 		.PossiblyNullContent(MapboardOverlay));
 
-}
-
-bool AShooterHUD::ShowStoreboard(bool bEnable, bool bFocus)
-{
-	if (bIsStoreBoardVisible == bEnable)
-	{
-		// if the scoreboard is already enabled, disable it in favour of the new request
-		if (bEnable)
-		{
-			ToggleScoreboard();
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	if (bEnable)
-	{
-		AShooterPlayerController* ShooterPC = Cast<AShooterPlayerController>(PlayerOwner);
-		if (ShooterPC == NULL || ShooterPC->IsGameMenuVisible())
-		{
-			return false;
-		}
-	}
-
-	bIsStoreBoardVisible = bEnable;
-	if (bIsStoreBoardVisible)
-	{
-		SAssignNew(StoreboardWidgetOverlay, SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(EHorizontalAlignment::HAlign_Center)
-			.VAlign(EVerticalAlignment::VAlign_Center)
-			.Padding(FMargin(50))
-			[
-				SAssignNew(StoreboardWidget, SShooterStoreWidget)
-				.Cursor(EMouseCursor::Default)
-				.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
-				.MatchState(GetMatchState())
-			];
-
-		GEngine->GameViewport->AddViewportWidgetContent(
-			SAssignNew(StoreboardWidgetContainer, SWeakWidget)
-			.PossiblyNullContent(StoreboardWidgetOverlay));
-
-		if (bFocus)
-		{
-			// Give input focus to the scoreboard
-			FSlateApplication::Get().SetKeyboardFocus(StoreboardWidget);
-		}
-	}
-	else
-	{
-		if (StoreboardWidgetContainer.IsValid())
-		{
-			if (GEngine && GEngine->GameViewport)
-			{
-				GEngine->GameViewport->RemoveViewportWidgetContent(StoreboardWidgetContainer.ToSharedRef());
-			}
-		}
-
-		if (bFocus)
-		{
-			// Make sure viewport has focus
-			FSlateApplication::Get().SetAllUserFocusToGameViewport();
-		}
-	}
-	return true;
 }
 
 void AShooterHUD::ToggleChat()

@@ -32,6 +32,12 @@ DECLARE_LOG_CATEGORY_EXTERN(LogShooterWeapon, Log, All);
 
 #define MAX_PLAYER_NAME_LENGTH 16
 
+#define PLAYER_ALL_SLOT_COUNT 13
+#define PLAYER_WEAPON_SLOT_COUNT 2
+#define PLAYER_INVENTORY_SLOT_COUNT 6
+#define PLAYER_ABILITY_SLOT_COUNT 5
+
+
 
 /** Set to 1 to pretend we're building for console even on a PC, for testing purposes */
 #define SHOOTER_SIMULATE_CONSOLE_UI	0

@@ -8,9 +8,20 @@
 #include "Blueprint/UserWidget.h"
 #include "ShooterLeaderboards.h"
 #include "ShooterInventoryInterface.h"
+#include "Entries/ShooterAssetEntry.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Store/ShooterStore.h"
+#include "Player/ShooterPlayerView.h"
+#include "Player/ShooterTargetPlayer.h"
+#include "Team/ShooterTeamBar.h"
+#include "UI/ViewModel/ShooterStoreViewModel.h"
 #include "ShooterPlayerController.generated.h"
 
+
 class AShooterHUD;
+class UShooterStore;
+class UShooterPlayerView;
+class UhooterTargetPlayer;
 
 
 UCLASS(config = Game)
@@ -44,6 +55,14 @@ public:
 	UFUNCTION(reliable, client)
 	void ClientSendRoundEndEvent(bool bIsWinner, int32 ExpendedTimeInSeconds);
 
+	/** Notifies clients to send the Purchase event */
+	UFUNCTION(reliable, client)
+	void ClientReceivePurchaseEvent(const FShooterItemSlot& NewItemSlot, const FShooterItemData& NewItemData, class UShooterItem* NewItem, bool bAdd);
+
+	/** Notifies clients to send the Purchase Failure message */
+	UFUNCTION(reliable, client)
+	void ClientReceivePurchaseFailure(const FText& Message, class UShooterItem* NewItem);
+
 	/** used for input simulation from blueprint (for automatic perf tests) */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void SimulateInputKey(FKey Key, bool bPressed = true);
@@ -70,6 +89,12 @@ public:
 // 	UFUNCTION(exec)
 // 	virtual void Emote(const FString& Msg);
 
+	/** notify local client about Inventory item change */
+	//void OnInventoryMessage(class AShooterPlayerState* OwnerPlayerState, const UShooterItem* Item, bool bAdd);
+
+	/** notify local client about Coins */
+	void OnCoinsIncomeMessage(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* KilledPlayerState, const UDamageType* KillerDamageType);
+
 	/** notify local client about deaths */
 	void OnDeathMessage(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* KilledPlayerState, const UDamageType* KillerDamageType);
 
@@ -78,9 +103,6 @@ public:
 
 	/** toggle InGameMenu handler */
 	void OnToggleInGameMenu();
-
-	/** toggle InGameMenu handler */
-	void OnToggleShopMenu();
 
 	/** Show the in-game menu if it's not already showing */
 	void ShowInGameMenu();
@@ -215,6 +237,9 @@ public:
 
 protected:
 
+	//UPROPERTY(VisibleAnywhere, Transient, ReplicatedUsing = OnRep_PurchaseItem)
+	//UShooterItem* CurrentPurchaseItem;
+
 	/** infinite ammo cheat */
 	UPROPERTY(Transient, Replicated)
 	uint8 bInfiniteAmmo : 1;
@@ -344,6 +369,24 @@ public:
 	virtual void Possess(APawn* NewPawn) override;
 	virtual void UnPossess() override;
 
+
+	/******************** PlayerDashboard View Event Delegate *********************/
+	/** Show the Player Dashboard if it's not already showing */
+	UFUNCTION(BlueprintCallable, Category = Inventory)
+	void ShowPlayerDashboard();
+
+	UFUNCTION()
+	void NotifyHPChanged(float InHealth, float InMaxHealth, float InRestoreHealth);
+
+	UFUNCTION()
+	void NotifyMPChanged(float InMana, float InMaxMana, float InRestoreMana);
+
+	/******************** PlayerTarget View Event Delegate *********************/
+
+
+
+	void InitializPlayerSlots();
+
 	// 显示商店面板
 	void ShowStoreView();
 
@@ -351,27 +394,47 @@ public:
 	void HideStoreView();
 
 	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
-	void CloseStoreWidget();
+	void CloseStoreBoard();
 
 	/* 卖出道具 */
 	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
-	bool SellItem(UShooterItem* Item);
+	void SellItem(UShooterItem* Item);
 
 	/* 购买道具 */
 	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
-	bool PurchaseItem(UShooterItem* Item);
+	void PurchaseItem(UShooterItem* Item);
 
 	/* 满足购买条件吗 */
 	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
 	bool CanPurchaseItem(UShooterItem* Item);
 
+	/** Returns number of instances of this item found in the inventory. This uses count from GetItemData */
+	UFUNCTION(BlueprintCallable, Category = Inventory)
+	bool HasItem(UShooterItem* Item);
+
+	/* 金币足够吗 */
+	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
+	bool IsCoinsEnough(UShooterItem* Item);
+
+	/* 背包空间足够吗 */
+	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
+	bool IsSlotSpaceEnough(UShooterItem* Item);
+
+	/* 是可叠加的物品吗 */
+	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
+	bool IsPluralItems(UShooterItem* Item);
+
 	/* 更新Souls数量-Item的price（卖出道具后） */
 	UFUNCTION(BlueprintCallable, Category = "StoreWidget")
 	void AddSouls(int32 Price);
 
+	void AddItemToSlottedItems(FShooterItemData NewData, UShooterItem* NewItem, int32 ItemCount);
+
+	void RemoveItemFromSlottedItems(FShooterItemData NewData, UShooterItem* NewItem);
+
 	/** server equip weapon */
 	UFUNCTION(reliable, server, WithValidation)
-	void ServerPurchaseItem(UShooterItem* Item);
+	void ServerPurchase(UShooterItem* Item);
 
 	UFUNCTION(BlueprintCallable)
 	TArray<UShooterItem*> GetInventoryItemList(FPrimaryAssetType ItemType) const;
@@ -380,8 +443,24 @@ public:
 	int32 GetInventoryItemListCount() const;
 
 	/** Map of all items owned by this player, from definition to data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Store)
+	TArray<UShooterItem*> AssetCategoryList;
+
+	/** Map of all items owned by this player, from definition to data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Store)
+	TArray<UShooterItem*> StoreItems;
+
+	/** Map of Inventory items owned by this player, from definition to data */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
-	TMap<UShooterItem*, FShooterItemData> InventoryData;
+	TMap<UShooterItem*, FShooterItemData> InventorySlot;
+
+	/** Map of Weapon items owned by this player, from definition to data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
+	TMap<UShooterItem*, FShooterItemData> WeaponSlot;
+
+	/** Map of Ability items owned by this player, from definition to data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities)
+	TMap<UShooterItem*, FShooterItemData> AbilitySlot;
 
 	/** Map of slot, from type/num to item, initialized from ItemSlotsPerType on ShooterGameInstanceBase */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
@@ -409,6 +488,21 @@ public:
 	/** Native version above, called before BP delegate */
 	FOnInventoryItemChangedNative OnInventoryItemChangedNative;
 
+	/** Delegate called when an inventory item has been added or removed */
+	UPROPERTY(BlueprintAssignable, Category = Store)
+	FOnStoreCategoryChanged OnStoreCategoryChanged;
+
+	/** Native version above, called before BP delegate */
+	FOnStoreCategoryChangedNative OnStoreCategoryChangedNative;
+
+	/** Delegate called when an inventory item has been added or removed */
+	UPROPERTY(BlueprintAssignable, Category = Store)
+	FOnStoreContentChanged OnStoreContentChanged;
+
+	/** Native version above, called before BP delegate */
+	FOnStoreContentChangedNative OnStoreContentChangedNative;
+
+
 	/** Delegate called when an inventory slot has changed */
 	UPROPERTY(BlueprintAssignable, Category = Inventory)
 	FOnSlottedItemChanged OnSlottedItemChanged;
@@ -423,7 +517,6 @@ public:
 	//DECLARE_MULTICAST_DELEGATE_OneParam(FOnInventorySoulsChangedNative, int32 /*ItemCount*/);
 	FOnInventorySoulsChangedNative OnInventorySoulsChangedNative;
 
-	UFUNCTION(BlueprintNativeEvent, Category = Inventory)
 	void OnInventoryItemChange(UShooterItem* item, bool bAdded);
 	//virtual void OnInventoryItemChange_Implementation(UShooterItem* item, bool bAdded);
 
@@ -431,17 +524,25 @@ public:
 	void OnItemSlotChanged(FShooterItemSlot ItemSlot, UShooterItem* item);
 	//virtual void OnItemSlotChanged_Implementation(FShooterItemSlot ItemSlot, UShooterItem* item);
 
+	/** Auto slots a specific item, returns true if anything changed */
+	bool FillEmptySlotWithItem(UShooterItem* NewItem);
+
+	/** Calls the inventory update callbacks */
+	void NotifyInventoryItemChanged(UShooterItem* Item, bool bAdded);
+	void NotifySlottedItemChanged(FShooterItemSlot ItemSlot, UShooterItem* Item);
+	void NotifyInventoryLoaded();
+
 	/** Called right after we have possessed a pawn */
-	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "BeginPossessPawn"))
+	UFUNCTION(BlueprintNativeEvent, meta = (DisplayName = "BeginPossessPawn"))
 	void ReceivePossess(APawn* NewPawn);
 
 	/** Called right before unpossessing a pawn */
-	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "EndPossessPawn"))
+	UFUNCTION(BlueprintNativeEvent, meta = (DisplayName = "EndPossessPawn"))
 	void ReceiveUnPossess(APawn* PreviousPawn);
 
 	/** Update inventory: Adds or Remove inventory item */
 	UFUNCTION(BlueprintCallable, Category = Inventory)
-	bool UpdateInventoryItem(UShooterItem* NewItem, bool bAdd = true);
+	void UpdateInventoryItem(UShooterItem* NewItem, bool bAdd = true);
 
 	/** Adds a new inventory item, will add it to an empty slot if possible. If the item supports count you can add more than one count. It will also update the level when adding if required */
 	UFUNCTION(BlueprintCallable, Category = Inventory)
@@ -454,10 +555,6 @@ public:
 	/** Returns all inventory items of a given type. If none is passed as type it will return all */
 	UFUNCTION(BlueprintCallable, Category = Inventory)
 	void GetInventoryItems(TArray<UShooterItem*>& Items, FPrimaryAssetType ItemType);
-
-	/** Returns number of instances of this item found in the inventory. This uses count from GetItemData */
-	UFUNCTION(BlueprintPure, Category = Inventory)
-	bool HasItem(UShooterItem* Item) const;
 
 	/** Returns number of instances of this item found in the inventory. This uses count from GetItemData */
 	UFUNCTION(BlueprintPure, Category = Inventory)
@@ -478,6 +575,18 @@ public:
 	UFUNCTION(BlueprintPure, Category = Inventory)
 	UShooterItem* GetSlottedItem(FShooterItemSlot ItemSlot) const;
 
+	/** Returns PlayerDashboard widget. */
+	UFUNCTION(BlueprintPure, Category = "HUD|PlayerDashboard")
+	UShooterPlayerView* GetPlayerDashboard() const;
+
+	/** Gets the Buffer widget */
+	UFUNCTION(BlueprintCallable, Category = "HUD|PlayerTarget")
+	UShooterTargetPlayer* GetPlayerTarget() const;
+
+	/** Gets the Buffer widget */
+	UFUNCTION(BlueprintCallable, Category = "HUD|TeamBar")
+	UShooterTeamBar* GetTeamBar() const;
+
 	/** Fills in any empty slots with items in inventory */
 	UFUNCTION(BlueprintCallable, Category = Inventory)
 	void FillEmptySlots();
@@ -490,18 +599,54 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Inventory)
 	bool LoadInventory();
 
+	/** Manually save the inventory, this is called from add/remove functions automatically */
+	UFUNCTION(BlueprintCallable, Category = Inventory)
+	bool SaveStore();
+
+	/** Loads inventory from save game on game instance, this will replace arrays */
+	//UFUNCTION(BlueprintCallable, Category = Inventory)
+	//bool LoadStoreItemSource();
+
+	/** Loads inventory from save game on game instance, this will replace arrays */
+	UFUNCTION(BlueprintCallable, Category = Store)
+	bool FindStoreAssetsByID(FPrimaryAssetId InAssetId, TArray<UShooterItem*>& OutItems);
+
+	TArray<TSharedPtr<FShooterAssetEntry>> Categories;
+
+	//const TArray<TSharedPtr<FShooterAssetEntry>>* GetStoreCategory();
+
 	// Implement IShooterInventoryInterface
-	virtual const TMap<UShooterItem*, FShooterItemData>& GetInventoryDataMap() const override
+	virtual const TMap<UShooterItem*, FShooterItemData>& GetInventorySlotMap() const override
 	{
-		return InventoryData;
+		return InventorySlot;
+	}
+	virtual const TMap<UShooterItem*, FShooterItemData>& GetWeaponItemMap() const override
+	{
+		return WeaponSlot;
+	}
+	virtual const TMap<UShooterItem*, FShooterItemData>& GetAbilityItemMap() const override
+	{
+		return AbilitySlot;
 	}
 	virtual const TMap<FShooterItemSlot, UShooterItem*>& GetSlottedItemMap() const override
 	{
 		return SlottedItems;
 	}
-	virtual FOnInventoryItemChangedNative& GetInventoryItemChangedDelegate() override
+	virtual FOnInventoryItemChangedNative& GetInventoryItemChangedNativeDelegate() override
 	{
 		return OnInventoryItemChangedNative;
+	}
+	virtual FOnInventoryItemChanged& GetInventoryItemChangedDelegate() override
+	{
+		return OnInventoryItemChanged;
+	}
+	virtual FOnStoreCategoryChangedNative& GetStoreCategoryChangedDelegate() override
+	{
+		return OnStoreCategoryChangedNative;
+	}
+	virtual FOnStoreContentChangedNative& GetStoreContentChangedDelegate() override
+	{
+		return OnStoreContentChangedNative;
 	}
 	virtual FOnSlottedItemChangedNative& GetSlottedItemChangedDelegate() override
 	{
@@ -513,36 +658,66 @@ public:
 	}
 
 protected:
-	/** Auto slots a specific item, returns true if anything changed */
-	bool FillEmptySlotWithItem(UShooterItem* NewItem);
 
-	/** Calls the inventory update callbacks */
-	void NotifyInventoryItemChanged(UShooterItem* Item, bool bAdded);
-	void NotifySlottedItemChanged(FShooterItemSlot ItemSlot, UShooterItem* Item);
-	void NotifyInventoryLoaded();
+	/**************************** PlayerController All Data RPC *******************************/
+	//UFUNCTION()
+	//void OnRep_PurchaseItem(UShooterItem* NewPurchaseItem);
 
+	//UFUNCTION()
+	//void SetCurrentPurchaseItem(UShooterItem* NewPurchaseItem);
+	   	 
+	/************************* HUD UI widgets *****************************/
+	TSharedPtr<SWidget> StoreboardContainer;
 
-	/************************* Store UI widgets *****************************/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "StoreWidget")
-	TSubclassOf<UUserWidget> StoreWidgetClass;
+	TSubclassOf<UShooterStore> StoreWidgetClass;
 
-	UUserWidget* StoreWidgetIns;
-
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Widget")
-	//TSubclassOf<UUserWidget> TestWidgetClass;
-
-	//UUserWidget* TestWidgetIns;
-
-	//创建widget对象并添加到Viewport
-	void ShowStoreWidget();
+	UPROPERTY()
+	UShooterStore* StoreBoard;
 
 	uint8 bStoreVisible : 1;
+
+	/** PlayerDashboard widget overlay. */
+	TSharedPtr<class SOverlay> PlayerboardOverlay;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerDashboard")
+	TSubclassOf<UShooterPlayerView> PlayerBoardWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerDashboard")
+	UShooterPlayerView* PlayerDashboard;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerTarget")
+	TSubclassOf<UShooterTargetPlayer> PlayerTargetWidgetClass;
+
+	/** PlayerDashboard widget overlay. */
+	TSharedPtr<class SOverlay> PlayerTargetOverlay;
+
+	UPROPERTY()
+	UShooterTargetPlayer* PlayerTarget;
+
+	TSharedPtr<SWidget> TeamBarContainer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerTeamBar")
+	TSubclassOf<UShooterTeamBar> TeamBarWidgetClass;
+
+	/** PlayerDashboard widget overlay. */
+	TSharedPtr<class SOverlay> TeamBarOverlay;
+
+	UPROPERTY()
+	UShooterTeamBar* TeamBar;
+
+	/** Show the Player Target if it's not already showing */
+	void ShowPlayerTarget();
+
+	/** Show the Player Target if it's not already showing */
+	void ShowTeamBar();
 
 	//获取需要操作数据的widget对象
 	void FindImageComponents();
 
 	//动态加载icon所需Texture2D
 	void LoadAssetsDynamic();
+
 
 };
 

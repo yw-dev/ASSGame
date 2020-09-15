@@ -500,13 +500,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TArray<class UShooterItem*> GetAssetSourceItems(FPrimaryAssetType AssetType) const;
 
+	// UFUNCTION(BlueprintCallable)
+	// TArray<FShooterGameAsset> GetAssetSources(FPrimaryAssetId AssetType);
+
 protected:
 	/** The current save game object */
 	UPROPERTY()
 	UShooterSaveGame* CurrentSaveGame;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AssetSource)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = AssetSource)
 	TArray<class UShooterItem*> AssetSourceItems;
+
+	UPROPERTY()
+	TArray<FShooterGameAsset> AssetSources;
 
 	/** Rather it will attempt to actually save to disk */
 	UPROPERTY()

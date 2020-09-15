@@ -208,6 +208,19 @@ public:
 
 	virtual void Destroyed() override;
 
+	/**
+	 *	Event when this actor overlaps another actor, for example a player walking into a trigger.
+	 *	For events when objects have a blocking collision, for example a player hitting a wall, see 'Hit' events.
+	 *	@note Components on both this and the other Actor must have bGenerateOverlapEvents set to true to generate overlap events.
+	 */
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+	/**
+	 *	Event when an actor no longer overlaps another actor, and they have separated.
+	 *	@note Components on both this and the other Actor must have bGenerateOverlapEvents set to true to generate overlap events.
+	 */
+	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+
 	/** set the weapon's owning pawn */
 	void SetOwningPawn(AShooterCharacter* AShooterCharacter);
 
@@ -323,11 +336,11 @@ public:
 	/** weapon is holstered by owner pawn */
 	virtual void OnUnEquip();
 
-	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
-	virtual void BeginWeaponAttack(FGameplayTag EventTag, float AttackDelayTime, int32 AttackDelayCount);
+	UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
+	void BeginWeaponAttack(FGameplayTag EventTag, float InAttackDelayTime, int32 InAttackDelayCount);
 
-	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
-	virtual void EndWeaponAttack();
+	UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
+	void EndWeaponAttack();
 	
 
 	//////////////////////////////////////////////////////////////////////////

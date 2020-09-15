@@ -7,20 +7,6 @@
 // Sets default values
 AShooterWeaponBase::AShooterWeaponBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	CapsuleCollision = ObjectInitializer.CreateDefaultSubobject<UCapsuleComponent>(this, TEXT("CapsuleCollision"));
-	CapsuleCollision->SetCapsuleHalfHeight(64.f);
-	CapsuleCollision->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-	CapsuleCollision->SetCollisionObjectType(ECC_Pawn);
-	CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
-	CapsuleCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-	CapsuleCollision->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_TC_WEAPON, ECR_Block);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_PROJECTILE, ECR_Ignore);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_WEAPON, ECR_Overlap);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_MARGIC, ECR_Ignore);
-	CapsuleCollision->SetupAttachment(GetRootComponent());
-
 	Mesh3P = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("WeaponMesh3P"));
 	Mesh3P->MeshComponentUpdateFlag = EMeshComponentUpdateFlag::OnlyTickPoseWhenRendered;
 	Mesh3P->bReceivesDecals = false;
@@ -28,7 +14,21 @@ AShooterWeaponBase::AShooterWeaponBase(const FObjectInitializer& ObjectInitializ
 	Mesh3P->SetCollisionObjectType(ECC_WorldDynamic);
 	Mesh3P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
-	Mesh3P->SetupAttachment(CapsuleCollision);
+	Mesh3P->SetupAttachment(GetRootComponent());
+
+	CapsuleCollision = ObjectInitializer.CreateDefaultSubobject<UCapsuleComponent>(this, TEXT("CapsuleCollision"));
+	CapsuleCollision->SetCapsuleHalfHeight(64.f);
+	CapsuleCollision->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+	CapsuleCollision->SetCollisionObjectType(ECC_Pawn);
+	CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	//CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_TC_WEAPON, ECR_Block);
+	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_PROJECTILE, ECR_Ignore);
+	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_WEAPON, ECR_Overlap);
+	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_MARGIC, ECR_Ignore);
+	CapsuleCollision->SetupAttachment(GetRootComponent());
 
 	LastFireTime = 0.0f;
 
@@ -75,7 +75,29 @@ void AShooterWeaponBase::Tick(float DeltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Input
+// Weapon Overlaped
+
+void AShooterWeaponBase::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+	if (GetInstigator()->GetClass() != OtherActor->GetClass() && bIsAttacking == true)
+	{
+		//this->GetInstigator();
+		FGameplayEventData EventData;
+		EventData.Instigator = GetInstigator();
+		EventData.Target = OtherActor;
+		//FGameplayTag EventTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Event.Montage.Shared.WeaponHit"));
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetInstigator(), AttachEventTag, EventData);
+	}
+}
+
+void AShooterWeaponBase::NotifyActorEndOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorEndOverlap(OtherActor);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Player Input
 
 /** [local + server] start weapon fire */
 void AShooterWeaponBase::StartFire()
@@ -107,9 +129,9 @@ void AShooterWeaponBase::OnUnEquip()
 
 }
 
-void AShooterWeaponBase::BeginWeaponAttack(FGameplayTag EventTag, float InAttackDelayTime, int32 InAttackDelayCount)
+void AShooterWeaponBase::BeginWeaponAttack_Implementation(FGameplayTag EventTag, float InAttackDelayTime, int32 InAttackDelayCount)
 {
-	UE_LOG(LogTemp, Warning, TEXT("WeaponBase::BeginWeaponAttack()"));
+	UE_LOG(LogTemp, Log, TEXT("WeaponBase::BeginWeaponAttack( EventTag = %s, AttackDelayTime = %f, AttackDelayCount = %d)"), *EventTag.ToString(), InAttackDelayTime, InAttackDelayCount);
 	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("BeginWeaponAttack()"));
 	AttachEventTag = EventTag;
 	AttackDelayCount = InAttackDelayCount;
@@ -118,7 +140,7 @@ void AShooterWeaponBase::BeginWeaponAttack(FGameplayTag EventTag, float InAttack
 	GetCapsuleCollision()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
-void AShooterWeaponBase::EndWeaponAttack()
+void AShooterWeaponBase::EndWeaponAttack_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("WeaponBase::EndWeaponAttack()"));
 	bIsAttacking = false;

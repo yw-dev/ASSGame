@@ -51,36 +51,40 @@ void FShooterStoreViewModel::BuildContentSourceViewModels()
 	//	const TAssetSubclassOf<AActor>& IN_Pawn)
 	//FSlateBrush Brush = FShooterImageBrush(TEXT("/Game/UI/Icons/Races/INV_Misc_Ticket_Tarot_Beasts_01.INV_Misc_Ticket_Tarot_Beasts_01"), FVector2D(100, 100));
 	//TSharedPtr<FSlateBrush> IconBrush = FSlateDynamicImageBrush::CreateWithImageData(TEXT("/Game/UI/Icons/Races/INV_Misc_Ticket_Tarot_Beasts_01.INV_Misc_Ticket_Tarot_Beasts_01"), FVector2D(100, 100));
-
+	/*
 	// FShooterImageBrush brush = FShooterImageBrush(TEXT("/Game/UI/Icons/Races/INV_Misc_Ticket_Tarot_Beasts_01.INV_Misc_Ticket_Tarot_Beasts_01"), FVector2D(100, 100)),
 	TSharedRef<FShooterWidgetItem> Armors = MakeShareable(new FShooterWidgetItem(NULL,
-		TEXT("Armors"),
-		FString("Armors"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Shirt_08.INV_Shirt_08"), FVector2D(64, 64))),
-		FString("ArmorsDescrip")
+		FText::FromString(TEXT("Armors")),
+		FText::FromString(TEXT("Armors")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Shirt_08.INV_Shirt_08"), FVector2D(64, 64)),
+		FText::FromString(TEXT("ArmorsDescrip")),
+		FText::FromString(TEXT("Armors"))
 	));
 	Categories.Add(Armors);
 	TSharedRef<FShooterWidgetItem> Weapons = MakeShareable(new FShooterWidgetItem(NULL,
-		TEXT("Weapons"),
-		FString("Weapons"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_47.INV_Mace_47"), FVector2D(64, 64))),
-		FString("WeaponsDescrip")
+		FText::FromString(TEXT("Weapons")),
+		FText::FromString(TEXT("Weapons")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_47.INV_Mace_47"), FVector2D(64, 64)),
+		FText::FromString(TEXT("WeaponsDescrip")),
+		FText::FromString(TEXT("Weapons"))
 	));
 	Categories.Add(Weapons);
 
 	TSharedRef<FShooterWidgetItem> Skills = MakeShareable(new FShooterWidgetItem(NULL,
-		TEXT("Skills"),
-		FString("Skills"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_09.INV_Misc_Book_09"), FVector2D(64, 64))),
-		FString("SkillsDescrip")
+		FText::FromString(TEXT("Skills")),
+		FText::FromString(TEXT("Skills")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_09.INV_Misc_Book_09"), FVector2D(64, 64)),
+		FText::FromString(TEXT("SkillsDescrip")),
+		FText::FromString(TEXT("Skills"))
 	));
 	Categories.Add(Skills);
 
 	TSharedRef<FShooterWidgetItem> Postions = MakeShareable(new FShooterWidgetItem(NULL,
-		TEXT("Postions"),
-		FString("Postions"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Postions/INV_Potion_08.INV_Potion_08"), FVector2D(64, 64))),
-		FString("PostionsDescrip")
+		FText::FromString(TEXT("Postions")),
+		FText::FromString(TEXT("Postions")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Postions/INV_Potion_08.INV_Potion_08"), FVector2D(64, 64)),
+		FText::FromString(TEXT("PostionsDescrip")),
+		FText::FromString(TEXT("Postions"))
 	));
 	Categories.Add(Postions);
 	//~~~~~~~~~~~~~~~~~~~
@@ -88,92 +92,92 @@ void FShooterStoreViewModel::BuildContentSourceViewModels()
 	//Armors Category
 	FShooterWidgetItemPtr Armor = Armors;
 	FShooterWidgetItemPtr EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Joy"),
-		FString("Joy"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Leather_12.INV_Chest_Leather_12"), FVector2D(64, 64))),
-		FString("JoyDescrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Joy")),
+		FText::FromString(TEXT("Joy")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Leather_12.INV_Chest_Leather_12"), FVector2D(64, 64)),
+		FText::FromString(TEXT("JoyDescrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Song"),
-		FString("Song"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Leather_13.INV_Chest_Leather_13"), FVector2D(64, 64))),
-		FString("SongDescrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Song")),
+		FText::FromString(TEXT("Song")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Leather_13.INV_Chest_Leather_13"), FVector2D(64, 64)),
+		FText::FromString(TEXT("SongDescrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Rainbows"),
-		FString("Rainbows"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_CHEST_MAIL_02.INV_CHEST_MAIL_02"), FVector2D(64, 64))),
-		FString("RainbowsDescrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Rainbows")),
+		FText::FromString(TEXT("Rainbows")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_CHEST_MAIL_02.INV_CHEST_MAIL_02"), FVector2D(64, 64)),
+		FText::FromString(TEXT("RainbowsDescrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Butterflies"),
-		FString("Butterflies"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_CHEST_MAIL_04.INV_CHEST_MAIL_04"), FVector2D(64, 64))),
-		FString("SongDescrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Butterflies")),
+		FText::FromString(TEXT("Butterflies")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_CHEST_MAIL_04.INV_CHEST_MAIL_04"), FVector2D(64, 64)),
+		FText::FromString(TEXT("SongDescrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Joy2"),
-		FString("Joy2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Mail_06.INV_Chest_Mail_06"), FVector2D(64, 64))),
-		FString("Joy2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Joy2")),
+		FText::FromString(TEXT("Joy2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Mail_06.INV_Chest_Mail_06"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Joy2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Joy2"),
-		FString("Joy2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Plate02.INV_Chest_Plate02"), FVector2D(64, 64))),
-		FString("Joy2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Joy2")),
+		FText::FromString(TEXT("Joy2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Plate02.INV_Chest_Plate02"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Joy2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Joy2"),
-		FString("Joy2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Plate06.INV_Chest_Plate06"), FVector2D(64, 64))),
-		FString("Joy2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Joy2")),
+		FText::FromString(TEXT("Joy2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Plate06.INV_Chest_Plate06"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Joy2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Joy2"),
-		FString("Joy2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Plate08.INV_Chest_Plate08"), FVector2D(64, 64))),
-		FString("Joy2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Joy2")),
+		FText::FromString(TEXT("Joy2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Plate08.INV_Chest_Plate08"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Joy2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Joy2"),
-		FString("Joy2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Plate18.INV_Chest_Plate18"), FVector2D(64, 64))),
-		FString("Joy2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Joy2")),
+		FText::FromString(TEXT("Joy2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Plate18.INV_Chest_Plate18"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Joy2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-		TEXT("Joy2"),
-		FString("Joy2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_Chest_Plate21.INV_Chest_Plate21"), FVector2D(64, 64))),
-		FString("Joy2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Joy2")),
+		FText::FromString(TEXT("Joy2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_Chest_Plate21.INV_Chest_Plate21"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Joy2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Armors->AddSubDirectory(EachSubDir);
 	for (int32 i = 0; i <= 35; i++) {
 		EachSubDir = MakeShareable(new FShooterWidgetItem(Armor,
-			TEXT("Dance") + FString::FormatAsNumber(i),
-			TEXT("Dance") + FString::FormatAsNumber(i),
-			MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Props/INV_CHEST_LEATHER_15.INV_CHEST_LEATHER_15"), FVector2D(64, 64))),
-			FString("DanceDescrip"),
-			TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+			FText::FromString(TEXT("Dance") + FString::FormatAsNumber(i)),
+			FText::FromString(TEXT("Dance") + FString::FormatAsNumber(i)),
+			new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Armors/INV_CHEST_LEATHER_15.INV_CHEST_LEATHER_15"), FVector2D(64, 64)),
+			FText::FromString(TEXT("DanceDescrip")),
+			FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 		));
 		Armors->AddSubDirectory(EachSubDir);
 	}
@@ -181,161 +185,161 @@ void FShooterStoreViewModel::BuildContentSourceViewModels()
 	//Weapons Category
 	FShooterWidgetItemPtr Weapon = Weapons;
 	FShooterWidgetItemPtr EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_40.INV_Mace_40"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_40.INV_Mace_40"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 	EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Dance2"),
-		FString("Dance2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_41.INV_Mace_41"), FVector2D(64, 64))),
-		FString("Dance2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Dance2")),
+		FText::FromString(TEXT("Dance2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_41.INV_Mace_41"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Dance2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 	EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Rainbows2"),
-		FString("Rainbows2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_42.INV_Mace_42"), FVector2D(64, 64))),
-		FString("Rainbows2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Rainbows2")),
+		FText::FromString(TEXT("Rainbows2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_42.INV_Mace_42"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Rainbows2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 	EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Butterflies2"),
-		FString("Butterflies2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_43.INV_Mace_43"), FVector2D(64, 64))),
-		FString("Butterflies2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Butterflies2")),
+		FText::FromString(TEXT("Butterflies2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_43.INV_Mace_43"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Butterflies2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 	EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Butterflies2"),
-		FString("Butterflies2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_44.INV_Mace_44"), FVector2D(64, 64))),
-		FString("Butterflies2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Butterflies2")),
+		FText::FromString(TEXT("Butterflies2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_44.INV_Mace_44"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Butterflies2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 	EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Butterflies2"),
-		FString("Butterflies2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_45.INV_Mace_45"), FVector2D(64, 64))),
-		FString("Butterflies2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Butterflies2")),
+		FText::FromString(TEXT("Butterflies2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_45.INV_Mace_45"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Butterflies2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 	EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Butterflies2"),
-		FString("Butterflies2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_50.INV_Mace_50"), FVector2D(64, 64))),
-		FString("Butterflies2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Butterflies2")),
+		FText::FromString(TEXT("Butterflies2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_50.INV_Mace_50"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Butterflies2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 	EachSubDir2 = MakeShareable(new FShooterWidgetItem(Weapon,
-		TEXT("Butterflies2"),
-		FString("Butterflies2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_51.INV_Mace_51"), FVector2D(64, 64))),
-		FString("Butterflies2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'")
+		FText::FromString(TEXT("Butterflies2")),
+		FText::FromString(TEXT("Butterflies2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Weapons/INV_Mace_51.INV_Mace_51"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Butterflies2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/PlayerPawn.PlayerPawn_C'"))
 	));
 	Weapons->AddSubDirectory(EachSubDir2);
 
 	//Skills Category
 	FShooterWidgetItemPtr Skill = Skills;
 	FShooterWidgetItemPtr EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_10.INV_Misc_Book_10"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_10.INV_Misc_Book_10"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_01.INV_Misc_Book_01"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_01.INV_Misc_Book_01"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_02.INV_Misc_Book_02"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_02.INV_Misc_Book_02"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_04.INV_Misc_Book_04"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_04.INV_Misc_Book_04"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_05.INV_Misc_Book_05"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_05.INV_Misc_Book_05"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_06.INV_Misc_Book_06"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_06.INV_Misc_Book_06"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_07.INV_Misc_Book_07"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_07.INV_Misc_Book_07"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_08.INV_Misc_Book_08"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_08.INV_Misc_Book_08"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 	EachSubDir3 = MakeShareable(new FShooterWidgetItem(Skill,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_11.INV_Misc_Book_11"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Skills/INV_Misc_Book_11.INV_Misc_Book_11"), FVector2D(64, 64)),
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Skills->AddSubDirectory(EachSubDir3);
 
 	//Postions Category
 	FShooterWidgetItemPtr Postion = Postions;
 	FShooterWidgetItemPtr EachSubDir4 = MakeShareable(new FShooterWidgetItem(Postion,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Postions/INV_Potion_142.INV_Potion_142"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		nullptr,
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Postions->AddSubDirectory(EachSubDir4);
 	EachSubDir4 = MakeShareable(new FShooterWidgetItem(Postion,
-		TEXT("Song2"),
-		FString("Song2"),
-		MakeShareable(new FShooterImageBrush(TEXT("/Game/UI/Icons/Menus/Postions/INV_Potion_148.INV_Potion_148"), FVector2D(64, 64))),
-		FString("Song2Descrip"),
-		TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'")
+		FText::FromString(TEXT("Song2")),
+		FText::FromString(TEXT("Song2")),
+		nullptr,
+		FText::FromString(TEXT("Song2Descrip")),
+		FText::FromString(TEXT("Blueprint'/Game/BluePrints/Pawns/HeroA.HeroA_C'"))
 	));
 	Postions->AddSubDirectory(EachSubDir4);
 
@@ -344,7 +348,7 @@ void FShooterStoreViewModel::BuildContentSourceViewModels()
 	SelectedCategory = Categories[0];
 	//ContentSource = SelectedCategory->AccessSubDirectories();
 	SelectedContent = SelectedCategory->AccessSubDirectories()[0];
-
+	*/
 	if (Categories.Num() > 0)
 	{
 		UpdateFilteredContentSourcesAndSelection(false);

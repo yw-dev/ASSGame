@@ -118,15 +118,34 @@ protected:
 
 	float AttackDelayTime;
 
+	/** [local] weapon specific fire implementation */
+	virtual void FireWeapon() override;
+
+public:
+
+	/** Begin Fire on server */
+	UFUNCTION(reliable, server, WithValidation)
+	void ServerFireBegin(FGameplayTag EventTag, float DelayTime, int32 DelayCount);
+
+	/** End Fire on server */
+	UFUNCTION(reliable, server, WithValidation)
+	void ServerFireEnd();
+
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Weapon usage
 
 	/** [local] weapon specific fire implementation */
-	virtual void FireWeapon() override;
+	//virtual void FireWeapon() override;
+	//UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
+	//void BeginWeaponAttack(FGameplayTag EventTag, float InAttackDelayTime, int32 InAttackDelayCount) override;
 
-	void BeginWeaponAttack(FGameplayTag EventTag, float DelayTime, int32 DelayCount);
+	//UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
+	//void EndWeaponAttack() override;
 
-	void EndWeaponAttack();
 
 	UFUNCTION()
 	void OnOverlapBegin(class UPrimitiveComponent* Actor,class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

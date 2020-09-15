@@ -91,6 +91,10 @@ protected:
 	UPROPERTY(config)
 	int32 KillScore;
 
+	/** bounty for Kill */
+	UPROPERTY(config)
+	int32 KillBounties;
+
 	/** score for death */
 	UPROPERTY(config)
 	int32 DeathScore;

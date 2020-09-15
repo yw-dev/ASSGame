@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include "EngineMinimal.h"
 #include "ShooterTypes.h"
+#include "Store/ShooterStore.h"
+#include "Player/ShooterPlayerView.h"
 #include "ShooterHUD.generated.h"
 
 struct FHitData
@@ -85,6 +88,8 @@ public:
 	/** Notifies we have hit the enemy. */
 	void NotifyEnemyHit();
 
+	void OnInventoryItemChanged(UShooterItem* NewItem, bool bAdd = false);
+
 	/** 
 	 * Set state of current match.
 	 *
@@ -102,10 +107,10 @@ public:
 	void ToggleScoreboard();
 
 	/** Show Playerboard */
-	void ShowPlayerboard();
+	void ShowMapboard();
 
 	/** Show Playerboard */
-	void ShowMapboard();
+	void ShowPlayerDashboard();
 
 	/** 
 	 * Toggles in game scoreboard.
@@ -118,7 +123,7 @@ public:
 	bool ShowScoreboard(bool bEnable, bool bFocus = false);
 
 	/** Toggles Storeboard */
-	void ToggleStoreboard();
+	//void ToggleStoreboard();
 
 	/**
 	 * Toggles in game storeboard.
@@ -128,7 +133,30 @@ public:
 	 * @param	bFocus	Give keyboard focus to the scoreboard.
 	 * @return	true, if the scoreboard visibility changed
 	 */
-	bool ShowStoreboard(bool bEnable, bool bFocus = false);
+	//bool ShowStoreboard(bool bEnable, bool bFocus = false);
+
+	/**
+	 * Refresh Inventory.
+	 *
+	 * @param	OwnerPlayerState	Player that did the user state.
+	 * @param	Item				use item.
+	 * @param	bAdd				bAdd (purchase or use/remove).
+	 */
+	//void RefreshInventory(class AShooterPlayerState* OwnerPlayerState, const UShooterItem* Item, bool bAdd);
+	void RefreshInventoryByMessage(const FShooterItemSlot& NewItemSlot, const FShooterItemData& NewItemData, class UShooterItem* Item, bool bAdd);
+
+	void RefreshSlottedItems(const FShooterItemSlot& NewSlot, const FShooterItemData& NewData, class UShooterItem* NewItem, bool bAdd=false);
+
+	void ShowPurchaseFailureMessage(const FText& NewMessage, class UShooterItem* NewItem);
+
+	/**
+	 * Refresh Inventory.
+	 *
+	 * @param	KillerPlayerState	Player that did the killings state.
+	 * @param	VictimPlayerState	Played that was killed state.
+	 * @param	KillerDamageType	The type of damaged that caused the death.
+	 */
+	void RefreshInventoryWidget(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* VictimPlayerState, const UDamageType* KillerDamageType);
 
 	/** 
 	 * Add death message.
@@ -166,6 +194,9 @@ public:
 protected:
 	/** Floor for automatic hud scaling. */
 	static const float MinHudScale;
+
+	/** Current Window Viewport size*/
+	//const FVector2D ViewportSize;
 
 	/** Lighter HUD color. */
 	FColor HUDLight;
@@ -305,6 +336,8 @@ protected:
 	/** Active death messages. */
 	TArray<FDeathMessage> DeathMessages;
 
+	TMap<FShooterItemSlot, UShooterItem*> SlottedItems;
+
 	/** State of match. */
 	EShooterMatchState::Type MatchState;
 
@@ -313,6 +346,12 @@ protected:
 
 	/** Is the scoreboard widget on screen? */
 	uint32 bIsStoreBoardVisible : 1;
+
+	UPROPERTY(EditAnywhere, Category = "Store Widget")
+	TSubclassOf<class UShooterStore> StoreWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD | StoreWidget")
+	UShooterStore* StoreWidget;
 
 	/** Scoreboard widget. */
 	TSharedPtr<class SShooterScoreboardWidget>	ScoreboardWidget;
@@ -324,22 +363,13 @@ protected:
 	TSharedPtr<class SWidget> ScoreboardWidgetContainer;
 
 	/** Storeboard widget. */
-	TSharedPtr<class SShooterStoreWidget> StoreboardWidget;
+	//TSharedPtr<class SShooterStoreWidget> StoreboardWidget;
 
 	/** Storeboard widget overlay. */
-	TSharedPtr<class SOverlay> StoreboardWidgetOverlay;
+	//TSharedPtr<class SOverlay> StoreboardWidgetOverlay;
 
 	/** Storeboard widget container - used for removing */
-	TSharedPtr<class SWidget> StoreboardWidgetContainer;
-
-	/** Storeboard widget. */
-	TSharedPtr<class SShooterPlayerWidget> PlayerboardWidget;
-
-	/** Storeboard widget overlay. */
-	TSharedPtr<class SOverlay> PlayerboardOverlay;
-
-	/** Storeboard widget container - used for removing */
-	TSharedPtr<class SWidget> PlayerboardContainer;
+	//TSharedPtr<class SWidget> StoreboardWidgetContainer;
 
 	/** Storeboard widget. */
 	TSharedPtr<class SShooterMapWidget> MapboardWidget;
@@ -356,6 +386,34 @@ protected:
 	/** Array of information strings to render (Waiting to respawn etc) */
 	TArray<FCanvasTextItem> InfoItems;
 
+	/** PlayerDashboard widget overlay. */
+	TSharedPtr<class SOverlay> PlayerboardOverlay;
+
+	//TSubclassOf<UShooterPlayerView> PlayerBoardWidgetClass;
+
+	UShooterPlayerView* PlayerDashboard;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText CurrentMessage;
+
+private:
+
+	TSharedPtr<class SOverlay> MessageOverlay;
+
+	/** Handle for efficient management of Receive Server Message timer */
+	FTimerHandle TimerHandle_Message;
+
+	int32 TipDeltaTime;
+
+	uint8 bMessageVisible : 1;
+
+	void ShowTipMessage();
+
+	/** style for the menu widget */
+	const struct FShooterMenuStyle *MenuStyle;
+
+public:
+
 	/** Called every time game is started. */
 	virtual void PostInitializeComponents() override;
 
@@ -365,6 +423,8 @@ protected:
 	 * @param TimeSeconds		The time to get a string for.
 	 */
 	FString GetTimeString(float TimeSeconds);
+
+	const FText& GetCurrentMessage() const;
 
 	/** Draws weapon HUD. */
 	void DrawWeaponHUD();

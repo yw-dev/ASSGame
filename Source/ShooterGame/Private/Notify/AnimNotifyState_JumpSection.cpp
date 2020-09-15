@@ -7,17 +7,12 @@
 
 UAnimNotifyState_JumpSection::UAnimNotifyState_JumpSection() 
 {
-	bInstantJump = false;
+
 }
 
 void UAnimNotifyState_JumpSection::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
-	/*
-	if (MeshComp->GetWorld()->GetNetMode() == NM_DedicatedServer)
-	{
-		return;
-	}*/
-
+	UE_LOG(LogTemp, Warning, TEXT("JumpSection::NotifyBegin()"));
 	AShooterCharacter* Pawn = Cast<AShooterCharacter>(MeshComp->GetOwner());
 	//UE_LOG(LogTemp, Warning, TEXT("JumpSection::NotifyBegin(EnableComboPeriod = %s)"), Pawn->GetEnableComboPeriod() == true ? TEXT("True") : TEXT("False"));
 	if (Pawn)
@@ -30,12 +25,10 @@ void UAnimNotifyState_JumpSection::NotifyBegin(USkeletalMeshComponent* MeshComp,
 
 void UAnimNotifyState_JumpSection::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime)
 {
-	/*
-	if (MeshComp->GetWorld()->GetNetMode() == NM_DedicatedServer)
+	if (!bInstantJump)
 	{
 		return;
-	}*/
-
+	}
 	UE_LOG(LogTemp, Warning, TEXT("JumpSection::NotifyTick()"));
 	AShooterCharacter* Pawn = Cast<AShooterCharacter>(MeshComp->GetOwner());
 	if (Pawn)
@@ -47,12 +40,6 @@ void UAnimNotifyState_JumpSection::NotifyTick(USkeletalMeshComponent* MeshComp, 
 
 void UAnimNotifyState_JumpSection::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	/*
-	if (MeshComp->GetWorld()->GetNetMode() == NM_DedicatedServer)
-	{
-		return;
-	}*/
-
 	UE_LOG(LogTemp, Warning, TEXT("JumpSection::NotifyEnd()"));
 	AShooterCharacter* Pawn = Cast<AShooterCharacter>(MeshComp->GetOwner());
 	if (Pawn)
@@ -72,4 +59,9 @@ TArray<FName> UAnimNotifyState_JumpSection::GetJumpSetctions()
 bool UAnimNotifyState_JumpSection::IsInstantJump()
 {
 	return bInstantJump;
+}
+
+void UAnimNotifyState_JumpSection::SetInstantJump(bool InstantJump)
+{
+	bInstantJump = InstantJump;
 }

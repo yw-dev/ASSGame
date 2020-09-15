@@ -162,6 +162,7 @@ struct FShooterImageBrush : public FSlateDynamicImageBrush, public FGCObject
 	}
 };
 
+
 USTRUCT(BlueprintType)
 struct FPlayerAnim
 {
@@ -266,6 +267,72 @@ public:
 	void EnsureReplication();
 };
 
+USTRUCT()
+struct FShooterGameAsset
+{
+	GENERATED_BODY()
+
+	/*
+	FShooterGameAsset()
+	{ }
+
+	FShooterGameAsset(const FPrimaryAssetId& InAssetId, const TArray<class UShooterItem*>& InAssetItems)
+		: AssetCategory(InAssetId)
+		, AssetItems(InAssetItems)
+	{ }*/
+
+	/** This identifies an object as a "primary" asset that can be searched for by the AssetManager and used in various tools */
+	UPROPERTY()
+	FPrimaryAssetId AssetCategory;
+
+	/** This identifies an object as a "primary" asset that can be searched for by the AssetManager and used in various tools */
+	UPROPERTY()
+	TArray<class UShooterItem*> AssetItems;
+
+public:
+
+	void Init(FPrimaryAssetId InAssetId, TArray<class UShooterItem*> InAssetItems) // Assign only the vars we wish to replicate
+	{
+		AssetCategory = InAssetId;
+		AssetItems = InAssetItems;
+	}
+
+	void SetAssetID(const FPrimaryAssetId& InAssetCategory) const;
+
+	FPrimaryAssetId GetAssetID() const { return AssetCategory; }
+
+	void SetAssetItems(const TArray<class UShooterItem*>& InAssetItems) const;
+
+	TArray<class UShooterItem*> GetAllAssetItems() const { return AssetItems; };
+
+	TArray<class UShooterItem*> GetAssetItemsByID() const;
+
+	/** Equality operators */
+	bool operator==(const FShooterGameAsset& Other) const
+	{
+		return AssetCategory.IsValid() && Other.AssetCategory.IsValid() && AssetCategory == Other.AssetCategory;
+	}
+	bool operator!=(const FShooterGameAsset& Other) const
+	{
+		return !(*this == Other);
+	}
+
+	/** Implemented so it can be used in Maps/Sets */
+	friend inline uint32 GetTypeHash(const FShooterGameAsset& Key)
+	{
+		uint32 Hash = 0;
+
+		Hash = HashCombine(Hash, GetTypeHash(Key.AssetCategory.PrimaryAssetType));
+		Hash = HashCombine(Hash, GetTypeHash(Key.AssetCategory.PrimaryAssetName));
+		return Hash;
+	}
+
+	/** Returns true if slot is valid */
+	bool IsValid() const
+	{
+		return AssetCategory.IsValid();
+	}
+};
 
 class UShooterItem;
 
@@ -383,7 +450,7 @@ struct SHOOTERGAME_API FShooterItemData
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryLoaded);
 DECLARE_MULTICAST_DELEGATE(FOnInventoryLoadedNative);
 
-/** Delegate called when an inventory item changes */
+/** Delegate called when an inventory Slot changes */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventoryItemChanged, UShooterItem*, Item, bool, bAdded);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryItemChangedNative, UShooterItem*, bool);
 
@@ -394,4 +461,16 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSlottedItemChangedNative, FShooterItemSl
 /** Delegate called when inventory souls changes */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventorySoulsChanged, int32, NewSoulsValue);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnInventorySoulsChangedNative, int32);
+
+/** Delegate called when an inventory item changes */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStoreCategoryChanged, UShooterItem*, Item, bool, bSelected);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStoreCategoryChangedNative, UShooterItem*, bool);
+
+/** Delegate called when an inventory item changes */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStoreContentChanged, UShooterItem*, Item, bool, bSelected);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStoreContentChangedNative, UShooterItem*, bool);
+
+/** Delegate called when an inventory item changes */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStoreItemPurchase, UShooterItem*, Item, bool, bPurchase);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStoreItemPurchaseNative, UShooterItem*, bool);
 

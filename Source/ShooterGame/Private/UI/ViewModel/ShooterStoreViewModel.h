@@ -8,7 +8,6 @@
 #include "ShooterSourceModel.h"
 #include "Brushes/SlateDynamicImageBrush.h"
 
-
 typedef TSharedPtr<class FShooterWidgetItem> FShooterWidgetItemPtr;
 
 /**
@@ -26,19 +25,19 @@ public:
 	}
 
 	/** @return the path on hard disk, read-only */
-	const FString GetDirectoryPath() const
+	const FString& GetDirectoryPath() const
 	{
 		return DirectoryPath;
 	}
 
 	/** @return name to Categoty in file tree view! read-only */
-	const FString GetName() const
+	const FString& GetName() const
 	{
 		return Name;
 	}
 
 	/** @return Description to Categoty in file tree view! read-only */
-	const FString GetDescrip() const
+	const FString& GetDescrip() const
 	{
 		return Descrip;
 	}
@@ -50,7 +49,7 @@ public:
 	}
 
 	/** @return name to Categoty in file tree view! read-only */
-	const FString GetPawn() const
+	const FString& GetPawn() const
 	{
 		return Pawn;
 	}
@@ -81,7 +80,7 @@ public:
 		FString IN_Name,
 		TSharedPtr<FSlateBrush> IN_IconBrush,
 		FString IN_Descrip,
-		FString IN_Pawn = ""
+		FString IN_Pawn
 	)
 		: ParentElement(IN_ParentElement)
 		, DirectoryPath(IN_DirectoryPath)

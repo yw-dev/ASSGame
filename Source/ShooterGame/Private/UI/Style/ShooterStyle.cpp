@@ -77,6 +77,12 @@ TSharedRef< FSlateStyleSet > FShooterStyle::Create()
 		.SetShadowOffset(FIntPoint(-1,1))
 		);
 
+	Style.Set("ShooterGame.MenuButtonTextNormalStyle", FTextBlockStyle()
+		.SetFont(TTF_FONT("Fonts/Roboto-Regular", 13))
+		.SetColorAndOpacity(FLinearColor(FColor(155, 164, 182)))
+		.SetShadowOffset(FVector2D(0, 1))
+	);
+
 	Style.Set("ShooterGame.MenuButtonTextStyle", FTextBlockStyle()
 		.SetFont(TTF_FONT("Fonts/Roboto-Black", 18))
 		.SetColorAndOpacity(FLinearColor(FColor(155, 164, 182)))
@@ -136,6 +142,15 @@ TSharedRef< FSlateStyleSet > FShooterStyle::Create()
 		.SetColorAndOpacity(FLinearColor::White)
 		.SetShadowOffset(FIntPoint(-1,1))
 		);
+
+	Style.Set("ShooterGame.SlotItemButtonStyle", FButtonStyle()
+		.SetNormal(BOX_BRUSH("Images/T_UI_ButtonImage_01", FMargin(1.0f / 10.0f)))
+		.SetHovered(BOX_BRUSH("Images/T_UI_ButtonImage_02", FMargin(1.0f / 10.0f)))
+		.SetPressed(BOX_BRUSH("Images/T_UI_ButtonImage_02", FMargin(1.0f / 10.0f)))
+		.SetDisabled(BOX_BRUSH("Images/T_UI_ButtonImage_01", FMargin(1.0f / 10.0f)))
+		.SetNormalPadding(FMargin(2.0f))
+		.SetPressedPadding(FMargin(2.0, 3.0, 2.0, 1.0))
+	);
 
 	Style.Set("ShooterGame.Switch.Left", FInlineTextImageStyle()
 		.SetImage(IMAGE_BRUSH("Images/SwitchButtonLeft", FVector2D(32, 32)))

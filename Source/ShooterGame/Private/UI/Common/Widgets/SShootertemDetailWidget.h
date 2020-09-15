@@ -4,17 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "ShooterStoreWidget.generated.h"
+#include "SShootertemDetailWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UShooterStoreWidget : public UUserWidget
+class USShootertemDetailWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
-	
+
 	
 	
 };

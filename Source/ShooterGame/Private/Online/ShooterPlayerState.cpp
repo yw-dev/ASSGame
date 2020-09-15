@@ -8,9 +8,14 @@ AShooterPlayerState::AShooterPlayerState(const FObjectInitializer& ObjectInitial
 	TeamNumber = 0;
 	NumKills = 0;
 	NumDeaths = 0;
+	NumCoins = 0;
 	NumBulletsFired = 0;
 	NumRocketsFired = 0;
 	bQuitter = false;
+	SlottedItems.Reserve(PLAYER_ALL_SLOT_COUNT);
+	InventorySlot.Reserve(PLAYER_INVENTORY_SLOT_COUNT);
+	WeaponSlot.Reserve(PLAYER_WEAPON_SLOT_COUNT);
+	SkillSlot.Reserve(PLAYER_ABILITY_SLOT_COUNT);
 }
 
 void AShooterPlayerState::Reset()
@@ -19,8 +24,13 @@ void AShooterPlayerState::Reset()
 	
 	//PlayerStates persist across seamless travel.  Keep the same teams as previous match.
 	//SetTeamNum(0);
+	SlottedItems.Reserve(PLAYER_ALL_SLOT_COUNT);
+	InventorySlot.Reserve(PLAYER_INVENTORY_SLOT_COUNT);
+	WeaponSlot.Reserve(PLAYER_WEAPON_SLOT_COUNT);
+	SkillSlot.Reserve(PLAYER_ABILITY_SLOT_COUNT);
 	NumKills = 0;
 	NumDeaths = 0;
+	NumCoins = 0;
 	NumBulletsFired = 0;
 	NumRocketsFired = 0;
 	bQuitter = false;
@@ -58,6 +68,73 @@ void AShooterPlayerState::AddBulletsFired(int32 NumBullets)
 	NumBulletsFired += NumBullets;
 }
 
+void AShooterPlayerState::FindItemData(UShooterItem* Item, FShooterItemData& ItemData) const
+{
+	const FShooterItemData* FoundItem = InventorySlot.Find(Item);
+
+	if (FoundItem)
+	{
+		ItemData = *FoundItem;
+		UE_LOG(LogTemp, Warning, TEXT("PlayerState::FindItemData(ItemData.ItemCount : %d)"), ItemData.ItemCount);
+		return;
+	}
+	ItemData = FShooterItemData(0, 0);
+}
+
+void AShooterPlayerState::FindItemSlot(UShooterItem* Item, FShooterItemSlot& ItemSlot) const
+{
+	const FShooterItemSlot* FoundSlot = SlottedItems.FindKey(Item);
+
+	if (FoundSlot)
+	{
+		ItemSlot = *FoundSlot;
+		UE_LOG(LogTemp, Warning, TEXT("PlayerState::FindItemSlot(ItemSlot.SlotNumber : %d)"), ItemSlot.SlotNumber);
+		return;
+	}
+	ItemSlot = FShooterItemSlot();
+}
+
+void AShooterPlayerState::AddSlottedItems(FShooterItemSlot NewSlot, UShooterItem* NewItem)
+{
+	SlottedItems.Add(NewSlot, NewItem);
+}
+
+void AShooterPlayerState::AddInventoryItems(FShooterItemData NewData, UShooterItem* NewItem)
+{
+	InventorySlot.Add(NewItem, NewData);
+}
+
+void AShooterPlayerState::AddWeaponItems(FShooterItemData NewData, UShooterItem* NewItem)
+{
+	WeaponSlot.Add(NewItem, NewData);
+}
+
+void AShooterPlayerState::AddSkillItems(FShooterItemData NewData, UShooterItem* NewItem)
+{
+	SkillSlot.Add(NewItem, NewData);
+}
+
+void AShooterPlayerState::RemoveSlottedItems(FShooterItemSlot NewSlot, UShooterItem* NewItem)
+{
+	//FShooterItemSlot ItemSlot = FindItemSlot(NewItem, NewSlot);
+	SlottedItems[NewSlot] = nullptr;
+}
+
+void AShooterPlayerState::RemoveInventoryItems(UShooterItem* NewItem)
+{
+	InventorySlot.Remove(NewItem);
+}
+
+void AShooterPlayerState::RemoveWeaponItems(UShooterItem* NewItem)
+{
+	WeaponSlot.Remove(NewItem);
+}
+
+void AShooterPlayerState::RemoveSkillItems(UShooterItem* NewItem)
+{
+	SkillSlot.Remove(NewItem);
+}
+
 void AShooterPlayerState::AddRocketsFired(int32 NumRockets)
 {
 	NumRocketsFired += NumRockets;
@@ -92,6 +169,19 @@ void AShooterPlayerState::UpdateTeamColors()
 	}
 }
 
+void AShooterPlayerState::UpdateInventorySlotted(FShooterItemSlot NewSlot, UShooterItem* NewItem)
+{
+	AController* OwnerController = Cast<AController>(GetOwner());
+	if (OwnerController != NULL)
+	{
+		AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(OwnerController->GetCharacter());
+		if (ShooterCharacter != NULL)
+		{
+			ShooterCharacter->UpdateInventoryItems(NewSlot, NewItem);
+		}
+	}
+}
+
 int32 AShooterPlayerState::GetTeamNum() const
 {
 	return TeamNumber;
@@ -122,9 +212,24 @@ int32 AShooterPlayerState::GetNumRocketsFired() const
 	return NumRocketsFired;
 }
 
-int32 AShooterPlayerState::GetNumMoney() const
+int32 AShooterPlayerState::GetNumCoins() const
 {
-	return NumMoney;
+	return NumCoins;
+}
+
+int32 AShooterPlayerState::GetNumWeaponItems() const
+{
+	return WeaponSlot.Num();
+}
+
+int32 AShooterPlayerState::GetNumInventoryItems() const
+{
+	return InventorySlot.Num();
+}
+
+int32 AShooterPlayerState::GetNumSkillItems() const
+{
+	return SkillSlot.Num();
 }
 
 bool AShooterPlayerState::IsQuitter() const
@@ -158,6 +263,44 @@ void AShooterPlayerState::ScorePoints(int32 Points)
 	}
 
 	Score += Points;
+}
+
+void AShooterPlayerState::CalculateCoins(int32 Bounty)
+{
+	NumCoins += Bounty;
+	UE_LOG(LogTemp, Warning, TEXT("AShooterPlayerState::CalculateCoins( NumCoins = %d )"), NumCoins);
+}
+
+void AShooterPlayerState::CalculateCoins(AShooterPlayerState* KilledBy, int32 Bounty)
+{
+	NumCoins += Bounty;
+	UE_LOG(LogTemp, Warning, TEXT("AShooterPlayerState::CalculateCoins( NumCoins = %d )"), NumCoins);
+}
+
+void AShooterPlayerState::InformAboutInventory_Implementation(class AShooterPlayerState* OwnerPlayerState, const UShooterItem* Item, bool bAdd)
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		// all local players get death messages so they can update their huds.
+		AShooterPlayerController* TestPC = Cast<AShooterPlayerController>(*It);
+		if (TestPC && TestPC->IsLocalController())
+		{
+			//TestPC->OnInventoryMessage(OwnerPlayerState, Item, bAdd);
+		}
+	}
+}
+
+void AShooterPlayerState::InformAboutCoins_Implementation(class AShooterPlayerState* KillerPlayerState, const UDamageType* KillerDamageType, class AShooterPlayerState* KilledPlayerState)
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		// all local players get death messages so they can update their huds.
+		AShooterPlayerController* TestPC = Cast<AShooterPlayerController>(*It);
+		if (TestPC && TestPC->IsLocalController())
+		{
+			TestPC->OnDeathMessage(KillerPlayerState, this, KillerDamageType);
+		}
+	}
 }
 
 void AShooterPlayerState::InformAboutKill_Implementation(class AShooterPlayerState* KillerPlayerState, const UDamageType* KillerDamageType, class AShooterPlayerState* KilledPlayerState)
@@ -216,7 +359,7 @@ void AShooterPlayerState::GetLifetimeReplicatedProps( TArray< FLifetimeProperty 
 	DOREPLIFETIME( AShooterPlayerState, TeamNumber );
 	DOREPLIFETIME( AShooterPlayerState, NumKills );
 	DOREPLIFETIME( AShooterPlayerState, NumDeaths );
-	DOREPLIFETIME( AShooterPlayerState, NumMoney);
+	DOREPLIFETIME( AShooterPlayerState, NumCoins);
 }
 
 FString AShooterPlayerState::GetShortPlayerName() const

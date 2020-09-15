@@ -26,7 +26,7 @@ public:
 
 	/** Pawn Data */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
-	FShooterWeaponEntry PawnEntry;
+	FShooterWeaponEntry ActorEntry;
 
 	/** Weapon actor to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)

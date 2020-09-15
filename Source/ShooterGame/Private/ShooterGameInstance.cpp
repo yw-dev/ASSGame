@@ -198,6 +198,7 @@ void UShooterGameInstance::InitializeDataSource()
 	UE_LOG(LogTemp, Warning, TEXT("GameInstance::InitializeDataSource()"));
 	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("InitializeDataSource()")));
 	//ItemSlotsPerType.Add(FPrimaryAssetType(TEXT("Token")), 1);
+	ItemSlotsPerType.Add(UShooterAssetManager::CategoryItemType, 0);
 	ItemSlotsPerType.Add(UShooterAssetManager::SkillItemType, 1);
 	ItemSlotsPerType.Add(UShooterAssetManager::PotionItemType, 2);
 	ItemSlotsPerType.Add(UShooterAssetManager::WeaponItemType, 3);
@@ -209,18 +210,24 @@ void UShooterGameInstance::InitializeDataSource()
 	// TMap<FPrimaryAssetId, FShooterItemData> DataSource;
 	// TMap<FPrimaryAssetType, int32> ItemSlotsPerType;
 	// TArray<class UShooterItem*> AssetSourceItems;
+	AssetSources.Reset();
+	FShooterGameAsset GameAsset;
+	TArray<UObject*> LoadedAssets;
+	TArray<class UShooterItem*> AssetItems;
+	TArray<FPrimaryAssetId> PrimaryAssetIdList;
 
 	for (const TPair<FPrimaryAssetType, int32>& TypePair : ItemSlotsPerType)
 	{
+		AssetItems.Reset();
+		LoadedAssets.Reset();
+		PrimaryAssetIdList.Reset();
 		//EGameKey::Type* const k = &It.Key();
 		//FSimpleKeyState* const v = &It.Value();
 		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("FPrimaryAssetType::s%"), (TypePair.Key).ToString());
-		TArray<FPrimaryAssetId> PrimaryAssetIdList;
-		TArray<UObject*> LoadedAssets;
-
 		UAssetManager::Get().GetPrimaryAssetIdList(TypePair.Key, PrimaryAssetIdList);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("FPrimaryAssetType::%d"), PrimaryAssetIdList.Num()));
 
+		GameAsset.AssetCategory = PrimaryAssetIdList[0];
 		TSharedPtr<FStreamableHandle> Handle = UAssetManager::Get().LoadPrimaryAssets(PrimaryAssetIdList);
 
 		if (Handle && Handle.IsValid())
@@ -233,11 +240,16 @@ void UShooterGameInstance::InitializeDataSource()
 			if (Obj)
 			{
 				AssetSourceItems.AddUnique(Cast<UShooterItem>(Obj));
+				AssetItems.AddUnique(Cast<UShooterItem>(Obj));
 			}
 		}
+		GameAsset.AssetItems = AssetItems;
+		AssetSources.AddUnique(GameAsset);
 		//AssetSourceMap.Emplace(TypePair.Key, AssetSourceItems);
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Red, FString::Printf(TEXT("AssetSourceItems::%d"), AssetSourceItems.Num()));
+	GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Red, FString::Printf(TEXT("AssetSources::%d"), AssetSources.Num()));
+	UE_LOG(LogTemp, Warning, TEXT("GameInstance::InitializeDataSource() -- AssetSources = %d"), AssetSources.Num());
 }
 
 TArray<class UShooterItem*> UShooterGameInstance::GetAssetSourceItems(FPrimaryAssetType AssetType) const
@@ -2691,6 +2703,7 @@ void UShooterGameInstance::AddDataSource(UShooterSaveGame* SaveGame, bool bRemov
 	if (bRemoveExtra)
 	{
 		SaveGame->AssetDataSource.Reset();
+		SaveGame->AssetSources.Reset();
 	}
 
 	// Now add the default inventory, this only adds if not already in hte inventory
@@ -2700,6 +2713,10 @@ void UShooterGameInstance::AddDataSource(UShooterSaveGame* SaveGame, bool bRemov
 		{
 			SaveGame->AssetDataSource.Add(Pair.Key, Pair.Value);
 		}
+	}
+	for (auto Temp : AssetSources)
+	{
+		SaveGame->AssetSources.AddUnique(Temp);
 	}
 }
 

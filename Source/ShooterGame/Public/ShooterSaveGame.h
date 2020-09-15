@@ -41,6 +41,9 @@ public:
 		// Set to current version, this will get overwritten during serialization when loading
 		SavedDataVersion = EShooterSaveGameVersion::LatestVersion;
 	}
+	
+	UPROPERTY()
+	TArray<FShooterGameAsset> AssetSources;
 
 	/** Map of items to item data */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveGame)

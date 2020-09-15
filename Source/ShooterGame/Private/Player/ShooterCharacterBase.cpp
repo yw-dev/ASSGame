@@ -140,7 +140,22 @@ void AShooterCharacterBase::RemoveStartupGameplayAbilities()
 
 void AShooterCharacterBase::OnInventoryItemChanged(UShooterItem* item, bool bAdded)
 {
-	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnItemSlotChanged()"));
+	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnInventoryItemChanged()"));
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_Authority"));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
+		break;
+	case ENetRole::ROLE_SimulatedProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_SimulatedProxy"));
+		break;
+	default:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
+		break;
+	}
 	RefreshSlottedGameplayAbilities();
 }
 
@@ -148,6 +163,15 @@ void AShooterCharacterBase::OnItemSlotChanged(FShooterItemSlot ItemSlot, UShoote
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnItemSlotChanged()"));
 	RefreshSlottedGameplayAbilities();
+}
+
+void AShooterCharacterBase::UpdateInventoryItems(FShooterItemSlot NewSlot, UShooterItem* NewItem)
+{
+	AShooterPlayerState* MyPlayerState = Cast<AShooterPlayerState>(PlayerState);
+	if (MyPlayerState != NULL)
+	{
+		MyPlayerState->AddSlottedItems(NewSlot, NewItem);
+	}
 }
 
 void AShooterCharacterBase::RefreshSlottedGameplayAbilities()
@@ -184,6 +208,7 @@ void AShooterCharacterBase::FillSlottedAbilitySpecs(TMap<FShooterItemSlot, FGame
 
 			if (SlottedItem && SlottedItem->GrantedAbility)
 			{
+				//UpdateInventoryItems(ItemPair.Key, ItemPair.Value);
 				// This will override anything from default
 				SlottedAbilitySpecs.Add(ItemPair.Key, FGameplayAbilitySpec(SlottedItem->GrantedAbility, GetCharacterLevel(), INDEX_NONE, SlottedItem));
 			}
@@ -259,9 +284,9 @@ void AShooterCharacterBase::PossessedBy(AController* NewController)
 	// Try setting the inventory source, this will fail for AI
 	InventorySource = NewController;
 	//AShooterPlayerController* PC = Cast<AShooterPlayerController>(NewController);
-	//FOnSlottedItemChangedNative OnSlottedItemChangedNative = InventorySource->GetSlottedItemChangedDelegate();
-	//FOnInventoryItemChangedNative OnInventoryItemChangedNative = InventorySource->GetInventoryItemChangedDelegate()
-	InventoryUpdateHandle = InventorySource->GetInventoryItemChangedDelegate().AddUObject(this, &AShooterCharacterBase::OnInventoryItemChanged);
+	//InventoryUpdateHandle.BindUFunction(this, STATIC_FUNCTION_FNAME(TEXT("AShooterCharacterBase::OnInventoryItemChanged")));
+	InventoryUpdateHandle = InventorySource->GetInventoryItemChangedNativeDelegate().AddUObject(this, &AShooterCharacterBase::OnInventoryItemChanged);
+	//InventorySource->GetInventoryItemChangedDelegate().Add(InventoryUpdateHandle);
 	InventoryLoadedHandle = InventorySource->GetInventoryLoadedDelegate().AddUObject(this, &AShooterCharacterBase::RefreshSlottedGameplayAbilities);
 	//if (InventorySource)
 	//{
@@ -282,9 +307,9 @@ void AShooterCharacterBase::UnPossessed()
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::UnPossessed()"));
 	// Unmap from inventory source
-	if (InventorySource && InventoryUpdateHandle.IsValid())
+	if (InventorySource && InventoryLoadedHandle.IsValid())
 	{
-		InventorySource->GetInventoryItemChangedDelegate().Remove(InventoryUpdateHandle);
+		InventorySource->GetInventoryItemChangedNativeDelegate().Remove(InventoryUpdateHandle);
 		InventoryUpdateHandle.Reset();
 
 		InventorySource->GetInventoryLoadedDelegate().Remove(InventoryLoadedHandle);
@@ -301,11 +326,11 @@ void AShooterCharacterBase::ReceivePossessed_Implementation(AController* NewCont
 	Super::ReceivePossessed(NewController);
 	//AShooterPlayerController* PC = Cast<AShooterPlayerController>(NewController);
 	// Try setting the inventory source, this will fail for AI
-	InventorySource = NewController;
+	//InventorySource = NewController;
 	//AShooterPlayerController* PC = Cast<AShooterPlayerController>(NewController);
 
-	InventoryUpdateHandle = InventorySource->GetInventoryItemChangedDelegate().AddUObject(this, &AShooterCharacterBase::OnInventoryItemChanged);
-	InventoryLoadedHandle = InventorySource->GetInventoryLoadedDelegate().AddUObject(this, &AShooterCharacterBase::RefreshSlottedGameplayAbilities);
+	//InventoryUpdateHandle = InventorySource->GetInventoryItemChangedDelegate().AddDynamic(this, &AShooterCharacterBase::OnInventoryItemChanged);
+	//InventoryLoadedHandle = InventorySource->GetInventoryLoadedDelegate().AddUObject(this, &AShooterCharacterBase::RefreshSlottedGameplayAbilities);
 	//if (InventorySource)
 	//{
 	//	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::PossessedBy( CharacterBase->InventorySource UpdateDelegates bound.)"));
@@ -314,11 +339,11 @@ void AShooterCharacterBase::ReceivePossessed_Implementation(AController* NewCont
 	//}
 
 	// Initialize our abilities
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		AddStartupGameplayAbilities();
-	}
+	//if (AbilitySystemComponent)
+	//{
+	//	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	//	AddStartupGameplayAbilities();
+	//}
 }
 
 void AShooterCharacterBase::OnRep_Controller()
@@ -434,10 +459,11 @@ void AShooterCharacterBase::PlayHighPriorityMontage(UAnimMontage* Montage, FName
 void AShooterCharacterBase::DoMeleeAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::DoMeleeAttack()"));
-	if (!IsUsingMelee() && CanUseAnyAbility())
+	/*
+	if (HasAuthority() && !IsUsingMelee() && CanUseAnyAbility())
 	{
 		ActivateAbilitiesWithItemSlot(CurrentWeaponSlot, true);
-	}
+	}*/
 }
 
 void AShooterCharacterBase::DoSkillAttack()
@@ -461,6 +487,11 @@ float AShooterCharacterBase::GetMaxHealth() const
 	return AttributeSet->GetMaxHealth();
 }
 
+float AShooterCharacterBase::GetRestoreHealth() const
+{
+	return AttributeSet->GetRestoreHealth();
+}
+
 float AShooterCharacterBase::GetMana() const
 {
 	return AttributeSet->GetMana();
@@ -469,6 +500,11 @@ float AShooterCharacterBase::GetMana() const
 float AShooterCharacterBase::GetMaxMana() const
 {
 	return AttributeSet->GetMaxMana();
+}
+
+float AShooterCharacterBase::GetRestoreMana() const
+{
+	return AttributeSet->GetRestoreMana();
 }
 
 float AShooterCharacterBase::GetMoveSpeed() const
@@ -613,15 +649,15 @@ bool AShooterCharacterBase::GetCooldownRemainingForTag(FGameplayTagContainer Coo
 	return false;
 }
 
-void AShooterCharacterBase::HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser)
+void AShooterCharacterBase::HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::HandleDamage()"));
 	OnDamaged(DamageAmount, HitInfo, DamageTags, EventInstigator, DamageCauser);
 }
 
-void AShooterCharacterBase::OnDamaged_Implementation(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser)
+void AShooterCharacterBase::OnDamaged_Implementation(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnDamaged_Implementation()"));
+	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnDamaged_Implementation( CurrentHealth = %d)"), GetHealth());
 }
 
 void AShooterCharacterBase::HandleHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
@@ -636,11 +672,10 @@ void AShooterCharacterBase::HandleHealthChanged(float DeltaValue, const struct F
 
 void AShooterCharacterBase::OnHealthChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
 {
-	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnHealthChanged_Implementation()"));
+	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnHealthChanged_Implementation( CurrentHealth = %d)"), GetHealth());
 
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
-
-	AShooterHUD* ShooterHUD = MyPC->GetShooterHUD();
+	//MyPC->NotifyHPChanged(GetHealth(), GetMaxHealth(), GetRestoreHealth());
 }
 
 void AShooterCharacterBase::HandleManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
@@ -655,6 +690,8 @@ void AShooterCharacterBase::HandleManaChanged(float DeltaValue, const struct FGa
 void AShooterCharacterBase::OnManaChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnManaChanged_Implementation()"));
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	MyPC->NotifyMPChanged(GetMana(), GetMaxMana(), GetRestoreMana());
 }
 
 void AShooterCharacterBase::HandleMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)

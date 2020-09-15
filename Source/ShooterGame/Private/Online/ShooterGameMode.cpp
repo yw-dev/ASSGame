@@ -455,6 +455,7 @@ void AShooterGameMode::Killed(AController* Killer, AController* KilledPlayer, AP
 	if (KillerPlayerState && KillerPlayerState != VictimPlayerState)
 	{
 		KillerPlayerState->ScoreKill(VictimPlayerState, KillScore);
+		KillerPlayerState->CalculateCoins(VictimPlayerState, KillBounties);
 		KillerPlayerState->InformAboutKill(KillerPlayerState, DamageType, VictimPlayerState);
 	}
 

@@ -38,6 +38,8 @@ enum class EPawnMode : uint8
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnShooterCharacterWeaponChange, AShooterCharacter*, AShooterWeaponBase* /* new */, AShooterWeaponBase* /*old */);
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterWeaponTypeChange, AShooterCharacter*, EShooterWeaponType);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterPurchaseDelegate, AShooterCharacter*, UShooterItem* /* new */);
+
 
 
 class UShooterGameplayAbility;
@@ -282,15 +284,6 @@ public:
 	/** update weapon state */
 	void SetPawnState(EPawnState::Type NewState);
 
-	/** determine current weapon state */
-	void DeterminePawnState();
-
-	/** [local + server] firing started */
-	virtual void OnBurstStarted();
-
-	/** [local + server] firing finished */
-	virtual void OnBurstFinished();
-
 	//////////////////////////////////////////////////////////////////////////
 	// Input handlers
 
@@ -372,6 +365,9 @@ public:
 	/** Global notification when a pawns weapon changes. Needed for replication graph. Use OnWeaponEquippedDelegate for actor notification */
 	static FOnShooterCharacterWeaponTypeChange NotifyWeaponTypeChange;
 
+	/** Global notification when a pawns weapon changes. Needed for replication graph. Use OnWeaponEquippedDelegate for actor notification */
+	static FOnShooterCharacterPurchaseDelegate NotifyPurchaseChange;
+
 	/** get targeting state */
 	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
 	bool IsTargeting() const;
@@ -401,6 +397,7 @@ public:
 
 	/** Update the team color of all player meshes. */
 	void UpdateTeamColorsAllMIDs();
+
 
 private:
 	/** pawn mesh: 1st person view */
@@ -618,11 +615,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Health)
 	float Health;
 
-	/** burst counter, used for replicating fire events to remote clients */
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_BurstCounter)
-	int32 BurstCounter;
-
-	// Current health of the Pawn
+	// Current WeaponType of the Pawn
 	UPROPERTY(VisibleAnywhere, Transient, ReplicatedUsing = OnRep_CurrentWeaponType)
 	EShooterWeaponType CurrentWeaponType;
 
@@ -721,18 +714,15 @@ protected:
 	UFUNCTION()
 	void SetCurrentWeaponType(EShooterWeaponType ActivePose = EShooterWeaponType::None);
 
+	//UFUNCTION()
+	//void SetPurchaseItem(UShooterItem* NewItem);
+
 	UFUNCTION()
 	/** current weapon Rep handler */
 	void OnRep_CurrentWeapon(class AShooterWeaponBase* LastWeapon);
 
 	UFUNCTION()
 	void OnRep_CurrentWeaponType(EShooterWeaponType weaponType);
-
-	UFUNCTION()
-	void OnRep_BurstCounter();
-
-	/** [server] spawns default inventory */
-	// void SpawnDefaultInventory();
 
 	/** server Remove weapon */
 	UFUNCTION(reliable, server, WithValidation)
@@ -753,20 +743,7 @@ protected:
 	/** update targeting state */
 	UFUNCTION(reliable, server, WithValidation)
 	void ServerSetRunning(bool bNewRunning, bool bToggle);
-
-	/** [server] fire & update ammo */
-	UFUNCTION(reliable, server, WithValidation)
-	void ServerHandleFiring();
-
-	/** [local + server] handle weapon fire */
-	void HandleFiring();
-
-	/** Called in network play to do the cosmetic fx for firing */
-	virtual void SimulateWeaponFire();
-
-	/** Called in network play to stop cosmetic fx (e.g. for a looping shot). */
-	virtual void StopSimulatingWeaponFire();
-
+	
 	/** Builds list of points to check for pausing replication for a connection*/
 	void BuildPauseReplicationCheckPoints(TArray<FVector>& RelevancyCheckPoints);
 
@@ -789,164 +766,6 @@ public:
 	/** Returns maximum health, health will never be greater than this */
 	UFUNCTION(BlueprintCallable)
 	virtual float GetCurMaxHealth() const;
-
-	/** Returns current mana */
-	//UFUNCTION(BlueprintCallable)
-	//virtual float GetMana() const;
-
-	/** Returns maximum mana, mana will never be greater than this */
-	//UFUNCTION(BlueprintCallable)
-	//virtual float GetMaxMana() const;
-
-	/** Returns current movement speed */
-	//UFUNCTION(BlueprintCallable)
-	//virtual float GetMoveSpeed() const;
-
-	/** Returns the character level that is passed to the ability system */
-	//UFUNCTION(BlueprintCallable)
-	//virtual int32 GetCharacterLevel() const;
-
-	/** Modifies the character level, this may change abilities. Returns true on success */
-	//UFUNCTION(BlueprintCallable)
-	//virtual bool SetCharacterLevel(int32 NewLevel);
-
-	/**
-		* Attempts to activate any ability in the specified item slot. Will return false if no activatable ability found or activation fails
-		* Returns true if it thinks it activated, but it may return false positives due to failure later in activation.
-		* If bAllowRemoteActivation is true, it will remotely activate local/server abilities, if false it will only try to locally activate the ability
-		*/
-	//UFUNCTION(BlueprintCallable, Category = "Abilities")
-	//bool ActivateAbilitiesWithItemSlot(FShooterItemSlot ItemSlot, bool bAllowRemoteActivation = true);
-
-	/** Returns a list of active abilities bound to the item slot. This only returns if the ability is currently running */
-	//UFUNCTION(BlueprintCallable, Category = "Abilities")
-	//void GetActiveAbilitiesWithItemSlot(FShooterItemSlot ItemSlot, TArray<UShooterGameplayAbility*>& ActiveAbilities);
-
-	/**
-		* Attempts to activate all abilities that match the specified tags
-		* Returns true if it thinks it activated, but it may return false positives due to failure later in activation.
-		* If bAllowRemoteActivation is true, it will remotely activate local/server abilities, if false it will only try to locally activate the ability
-		*/
-	//UFUNCTION(BlueprintCallable, Category = "Abilities")
-	//bool ActivateAbilitiesWithTags(FGameplayTagContainer AbilityTags, bool bAllowRemoteActivation = true);
-
-	/** Returns a list of active abilities matching the specified tags. This only returns if the ability is currently running */
-	//UFUNCTION(BlueprintCallable, Category = "Abilities")
-	//void GetActiveAbilitiesWithTags(FGameplayTagContainer AbilityTags, TArray<UShooterGameplayAbility*>& ActiveAbilities);
-
-	/** Returns total time and remaining time for cooldown tags. Returns false if no active cooldowns found */
-	//UFUNCTION(BlueprintCallable, Category = "Abilities")
-	//bool GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float& TimeRemaining, float& CooldownDuration);
-
-protected:
-	/** The level of this character, should not be modified directly once it has already spawned */
-	//UPROPERTY(EditAnywhere, Replicated, Category = Abilities)
-	//int32 CharacterLevel;
-
-	/** Abilities to grant to this character on creation. These will be activated by tag or event and are not bound to specific inputs */
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities)
-	//TArray<TSubclassOf<UShooterGameplayAbility>> GameplayAbilities;
-
-	/** Map of item slot to gameplay ability class, these are bound before any abilities added by the inventory */
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities)
-	//TMap<FShooterItemSlot, TSubclassOf<UShooterGameplayAbility>> DefaultSlottedAbilities;
-
-	/** Passive gameplay effects applied on creation */
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Abilities)
-	//TArray<TSubclassOf<UGameplayEffect>> PassiveGameplayEffects;
-
-	/** The component used to handle ability system interactions */
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	//UShooterAbilitySystemComponent* AbilitySystemComponent;
-
-	/** List of attributes modified by the ability system */
-	//UPROPERTY()
-	//UShooterAttributeSet* AttributeSet;
-
-	/** Cached pointer to the inventory source for this character, can be null */
-	//UPROPERTY()
-	//TScriptInterface<IShooterInventoryInterface> InventorySource;
-
-	/** If true we have initialized our abilities */
-	//UPROPERTY()
-	//int32 bAbilitiesInitialized;
-
-	/** Map of slot to ability granted by that slot. I may refactor this later */
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
-	//TMap<FShooterItemSlot, FGameplayAbilitySpecHandle> SlottedAbilities;
-
-	/** Delegate handles */
-	//FDelegateHandle InventoryUpdateHandle;
-	//FDelegateHandle InventoryLoadedHandle;
-
-	/**
-	 * Called when character takes damage, which may have killed them
-	 *
-	 * @param DamageAmount Amount of damage that was done, not clamped based on current health
-	 * @param HitInfo The hit info that generated this damage
-	 * @param DamageTags The gameplay tags of the event that did the damage
-	 * @param InstigatorCharacter The character that initiated this damage
-	 * @param DamageCauser The actual actor that did the damage, might be a weapon or projectile
-	 */
-	//virtual void OnDamaged(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser) override;
-	//virtual void OnDamaged_Implementation(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser) override;
-
-	/**
-	 * Called when health is changed, either from healing or from being damaged
-	 * For damage this is called in addition to OnDamaged/OnKilled
-	 *
-	 * @param DeltaValue Change in health value, positive for heal, negative for cost. If 0 the delta is unknown
-	 * @param EventTags The gameplay tags of the event that changed mana
-	 */
-	//virtual void OnHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-	//virtual void OnHealthChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-
-
-	/**
-	 * Called when mana is changed, either from healing or from being used as a cost
-	 *
-	 * @param DeltaValue Change in mana value, positive for heal, negative for cost. If 0 the delta is unknown
-	 * @param EventTags The gameplay tags of the event that changed mana
-	 */
-	//virtual void OnManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-	//virtual void OnManaChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-
-	/**
-	 * Called when movement speed is changed
-	 *
-	 * @param DeltaValue Change in move speed
-	 * @param EventTags The gameplay tags of the event that changed mana
-	 */
-	//virtual void OnMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-	//virtual void OnMoveSpeedChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-
-	/** Called when slotted items change, bound to delegate on interface */
-	//void OnItemSlotChanged(FShooterItemSlot ItemSlot, UShooterItem* Item);
-	//void RefreshSlottedGameplayAbilities();
-
-	/** Apply the startup gameplay abilities and effects */
-	//void AddStartupGameplayAbilities();
-
-	/** Attempts to remove any startup gameplay abilities */
-	//void RemoveStartupGameplayAbilities();
-
-	/** Adds slotted item abilities if needed */
-	//void AddSlottedGameplayAbilities();
-
-	/** Fills in with ability specs, based on defaults and inventory */
-	//void FillSlottedAbilitySpecs(TMap<FShooterItemSlot, FGameplayAbilitySpec>& SlottedAbilitySpecs);
-
-	/** Remove slotted gameplay abilities, if force is false it only removes invalid ones */
-	//void RemoveSlottedGameplayAbilities(bool bRemoveAll);
-
-	// Called from ShooterAttributeSet, these call BP events above
-	//virtual void HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser) override;
-	//virtual void HandleHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-	//virtual void HandleManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-	//virtual void HandleMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags) override;
-
-	// Friended to allow access to handle functions above
-	//friend UShooterAttributeSet;
 
 };
 

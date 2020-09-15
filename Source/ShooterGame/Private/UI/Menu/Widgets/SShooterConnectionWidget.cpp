@@ -3,6 +3,7 @@
 #include "ShooterGame.h"
 #include "ShooterStyle.h"
 #include "ShooterMenuItemWidgetStyle.h"
+#include "ShooterMenuSoundsWidgetStyle.h"
 #include "SShooterConnectionWidget.h"
 #include "ShooterBlueprintLibrary.h"
 #include "GenericPlatformChunkInstall.h"

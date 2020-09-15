@@ -38,6 +38,12 @@ class AShooterPlayerState : public APlayerState
 	/** player died */
 	void ScoreDeath(AShooterPlayerState* KilledBy, int32 Points);
 
+	/** player Coins earnings by Props */
+	void CalculateCoins(int32 Bounty);
+
+	/** player Coins earnings by Enemy */
+	void CalculateCoins(AShooterPlayerState* KilledBy, int32 Bounty);
+
 	/** get current team */
 	int32 GetTeamNum() const;
 
@@ -57,13 +63,30 @@ class AShooterPlayerState : public APlayerState
 	int32 GetNumRocketsFired() const;
 
 	/** get number of Money */
-	int32 GetNumMoney() const;
+	int32 GetNumCoins() const;
+
+	/** get number of Weapon Items */
+	int32 GetNumWeaponItems() const;
+
+	/** get number of Weapon Items */
+	int32 GetNumSkillItems() const;
+
+	/** get number of Inventory Items */
+	int32 GetNumInventoryItems() const;
 
 	/** get whether the player quit the match */
 	bool IsQuitter() const;
 
 	/** gets truncated player name to fit in death log and scoreboards */
 	FString GetShortPlayerName() const;
+
+	/** Sends Inventory changed (excluding self) to clients */
+	UFUNCTION(Reliable, Client)
+	void InformAboutInventory(class AShooterPlayerState* OwnerPlayerState, const UShooterItem* Item, bool bAdd = false);
+
+	/** Sends Coins (excluding self) to clients */
+	UFUNCTION(Reliable, Client)
+	void InformAboutCoins(class AShooterPlayerState* KillerPlayerState, const UDamageType* KillerDamageType, class AShooterPlayerState* KilledPlayerState);
 
 	/** Sends kill (excluding self) to clients */
 	UFUNCTION(Reliable, Client)
@@ -81,9 +104,23 @@ class AShooterPlayerState : public APlayerState
 	UFUNCTION()
 	void OnRep_TeamColor();
 
+	/** find item Data is existed */
+	void FindItemData(UShooterItem* Item, FShooterItemData& ItemData) const;
+	/** find item slot is existed */
+	void FindItemSlot(UShooterItem* Item, FShooterItemSlot& ItemSlot) const;
 	//We don't need stats about amount of ammo fired to be server authenticated, so just increment these with local functions
 	void AddBulletsFired(int32 NumBullets);
 	void AddRocketsFired(int32 NumRockets);
+	void AddSlottedItems(FShooterItemSlot NewSlot, UShooterItem* NewItem);
+	void AddInventoryItems(FShooterItemData NewData, UShooterItem* NewItem);
+	void AddWeaponItems(FShooterItemData NewData, UShooterItem* NewItem);
+	void AddSkillItems(FShooterItemData NewData, UShooterItem* NewItem);
+	void RemoveSlottedItems(FShooterItemSlot NewSlot, UShooterItem* NewItem);
+	void RemoveInventoryItems(UShooterItem* NewItem);
+	void RemoveWeaponItems(UShooterItem* NewItem);
+	void RemoveSkillItems(UShooterItem* NewItem);
+
+
 
 	/** Set whether the player is a quitter */
 	void SetQuitter(bool bInQuitter);
@@ -94,9 +131,16 @@ protected:
 	/** Set the mesh colors based on the current teamnum variable */
 	void UpdateTeamColors();
 
+	/** Set the mesh colors based on the current teamnum variable */
+	void UpdateInventorySlotted(FShooterItemSlot NewSlot, UShooterItem* NewItem);
+
 	/** team number */
 	UPROPERTY(Transient, ReplicatedUsing=OnRep_TeamColor)
 	int32 TeamNumber;
+
+	/** number of Money */
+	UPROPERTY(Transient, Replicated)
+	int32 NumCoins;
 
 	/** number of kills */
 	UPROPERTY(Transient, Replicated)
@@ -118,9 +162,20 @@ protected:
 	UPROPERTY()
 	uint8 bQuitter : 1;
 
-	/** number of Money */
-	UPROPERTY(Transient, Replicated)
-	int32 NumMoney;
+	UPROPERTY()
+	TMap<FShooterItemSlot, UShooterItem*> SlottedItems;
+
+	/** Map of Inventory items owned by this player, from definition to data */
+	UPROPERTY()
+	TMap<UShooterItem*, FShooterItemData> InventorySlot;
+
+	/** Map of Weapon items owned by this player, from definition to data */
+	UPROPERTY()
+	TMap<UShooterItem*, FShooterItemData> WeaponSlot;
+
+	/** Map of Ability items owned by this player, from definition to data */
+	UPROPERTY()
+	TMap<UShooterItem*, FShooterItemData> SkillSlot;
 
 	/** helper for scoring points */
 	void ScorePoints(int32 Points);

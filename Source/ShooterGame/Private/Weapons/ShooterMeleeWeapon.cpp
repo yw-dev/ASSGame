@@ -33,6 +33,31 @@ void AShooterMeleeWeapon::Destroyed()
 	Super::Destroyed();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Weapon Overlaped
+/*
+void AShooterMeleeWeapon::BeginWeaponAttack_Implementation(FGameplayTag EventTag, float InAttackDelayTime, int32 InAttackDelayCount)
+{
+	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::BeginWeaponAttack()"));
+	Super::BeginWeaponAttack(EventTag, InAttackDelayTime, InAttackDelayCount);
+}
+
+void AShooterMeleeWeapon::EndWeaponAttack_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::EndWeaponAttack()"));
+	Super::EndWeaponAttack();
+}
+*/
+void AShooterMeleeWeapon::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+}
+
+void AShooterMeleeWeapon::NotifyActorEndOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorEndOverlap(OtherActor);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // Inventory

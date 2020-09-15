@@ -23,6 +23,7 @@ public:
 	UShooterAssetManager() {}
 
 	/** Static types for items */ 
+	static const FPrimaryAssetType	CategoryItemType;	// 资源类型
 	static const FPrimaryAssetType	PotionItemType;		// 药品
 	static const FPrimaryAssetType	SkillItemType;		// 技能
 	static const FPrimaryAssetType	TokenItemType;		// 货币

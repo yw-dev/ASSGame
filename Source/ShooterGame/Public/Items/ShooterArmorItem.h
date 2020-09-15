@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Items/ShooterItem.h"
 #include "ShooterAssetManager.h"
+#include "Entries/ShooterSourceCategoryEntry.h"
 #include "ShooterArmorItem.generated.h"
 
 /**

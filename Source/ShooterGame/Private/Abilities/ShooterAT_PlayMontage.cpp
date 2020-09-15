@@ -26,7 +26,7 @@ UShooterAbilitySystemComponent* UShooterAT_PlayMontage::GetTargetASC()
 
 void UShooterAT_PlayMontage::OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted)
 {
-	UE_LOG(LogTemp, Warning, TEXT("PlayMontage::OnMontageBlendingOut( CurrentSection = %s)"));
+	UE_LOG(LogTemp, Warning, TEXT("PlayMontage::OnMontageBlendingOut()"));
 	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("OnMontageBlendingOut()"));
 	if (Ability && Ability->GetCurrentMontage() == MontageToPlay)
 	{

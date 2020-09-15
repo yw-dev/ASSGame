@@ -10,8 +10,12 @@
 UShooterAttributeSet::UShooterAttributeSet()
 	: Health(1.f)
 	, MaxHealth(1.f)
+	, RestoreHealth(1.f)
 	, Mana(0.f)
 	, MaxMana(0.f)
+	, RestoreMana(0.f)
+	, Coins(0.f)
+	, DeathCooldown(1.0f)
 	, AttackPower(1.0f)
 	, DefensePower(1.0f)
 	, MoveSpeed(1.0f)
@@ -25,8 +29,12 @@ void UShooterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 	DOREPLIFETIME(UShooterAttributeSet, Health);
 	DOREPLIFETIME(UShooterAttributeSet, MaxHealth);
+	DOREPLIFETIME(UShooterAttributeSet, RestoreHealth);
 	DOREPLIFETIME(UShooterAttributeSet, Mana);
 	DOREPLIFETIME(UShooterAttributeSet, MaxMana);
+	DOREPLIFETIME(UShooterAttributeSet, RestoreMana);
+	DOREPLIFETIME(UShooterAttributeSet, Coins);
+	DOREPLIFETIME(UShooterAttributeSet, DeathCooldown);
 	DOREPLIFETIME(UShooterAttributeSet, AttackPower);
 	DOREPLIFETIME(UShooterAttributeSet, DefensePower);
 	DOREPLIFETIME(UShooterAttributeSet, MoveSpeed);
@@ -42,6 +50,11 @@ void UShooterAttributeSet::OnRep_MaxHealth()
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, MaxHealth);
 }
 
+void UShooterAttributeSet::OnRep_RestoreHealth()
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, RestoreHealth);
+}
+
 void UShooterAttributeSet::OnRep_Mana()
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, Mana);
@@ -50,6 +63,21 @@ void UShooterAttributeSet::OnRep_Mana()
 void UShooterAttributeSet::OnRep_MaxMana()
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, MaxMana);
+}
+
+void UShooterAttributeSet::OnRep_RestoreMana()
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, RestoreMana);
+}
+
+void UShooterAttributeSet::OnRep_Coins()
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, Coins);
+}
+
+void UShooterAttributeSet::OnRep_DeathCooldown()
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, DeathCooldown);
 }
 
 void UShooterAttributeSet::OnRep_AttackPower()
@@ -131,7 +159,7 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 		// Get the Source actor
 		AActor* SourceActor = nullptr;
 		AController* SourceController = nullptr;
-		AShooterCharacter* SourceCharacter = nullptr;
+		AShooterCharacterBase* SourceCharacter = nullptr;
 		if (Source && Source->AbilityActorInfo.IsValid() && Source->AbilityActorInfo->AvatarActor.IsValid())
 		{
 			SourceActor = Source->AbilityActorInfo->AvatarActor.Get();
@@ -147,11 +175,11 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			// Use the controller to find the source pawn
 			if (SourceController)
 			{
-				SourceCharacter = Cast<AShooterCharacter>(SourceController->GetPawn());
+				SourceCharacter = Cast<AShooterCharacterBase>(SourceController->GetPawn());
 			}
 			else
 			{
-				SourceCharacter = Cast<AShooterCharacter>(SourceActor);
+				SourceCharacter = Cast<AShooterCharacterBase>(SourceActor);
 			}
 
 			// Set the causer actor based on context if it's set
@@ -179,24 +207,25 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			const float OldHealth = GetHealth();
 			SetHealth(FMath::Clamp(OldHealth - LocalDamageDone, 0.0f, GetMaxHealth()));
 
-			//if (TargetCharacter)
-			//{
+			if (TargetCharacter)
+			{
 				FPointDamageEvent PointDmg;
 				PointDmg.DamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
 				PointDmg.HitInfo = HitResult;
 				PointDmg.Damage = LocalDamageDone;
 
-				HitResult.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, SourceController, SourceActor);
+				HitResult.GetActor()->TakeDamage(LocalDamageDone, PointDmg, SourceController, SourceActor);
+				//TargetCharacter->HandleHealthChanged(-LocalDamageDone, SourceTags);
 				//FPointDamageEvent damageEvent;
 				//damageEvent.HitInfo = HitResult;
 				//TargetCharacter->TakeDamage(LocalDamageDone, damageEvent, SourceController, SourceActor);
 				// This is proper damage
-				// TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter, SourceActor);
+				//TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter, SourceActor);
 				//TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter->GetController(), SourceActor);
 
 				// Call for all health changes
-				//TargetCharacter->HandleHealthChanged(-LocalDamageDone, SourceTags);
-			//}
+				TargetCharacter->HandleHealthChanged(-LocalDamageDone, SourceTags);
+			}
 		}
 	}
 	else if (Data.EvaluatedData.Attribute == GetHealthAttribute())

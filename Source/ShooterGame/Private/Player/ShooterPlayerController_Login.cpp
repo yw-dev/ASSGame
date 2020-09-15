@@ -77,8 +77,8 @@ void AShooterPlayerController_Login::SetPlayer(UPlayer* InPlayer)
 	if (ULocalPlayer* const LocalPlayer = Cast<ULocalPlayer>(Player))
 	{
 		//Build menu only after game is initialized
-		PawnGuideMenu = MakeShareable(new FShooterPawnGuide());
-		PawnGuideMenu->Construct(SGI, Cast<ULocalPlayer>(Player));
+		//PawnGuideMenu = MakeShareable(new FShooterPawnGuide());
+		//PawnGuideMenu->Construct(SGI, Cast<ULocalPlayer>(Player));
 
 		//FInputModeGameOnly InputMode;
 		//SetInputMode(InputMode);

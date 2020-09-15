@@ -37,6 +37,11 @@ public:
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UShooterAttributeSet, MaxHealth)
 
+	/** RestoreHealth is its own attribute, since GameplayEffects may modify it */
+	UPROPERTY(BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_RestoreHealth)
+	FGameplayAttributeData RestoreHealth;
+	ATTRIBUTE_ACCESSORS(UShooterAttributeSet, RestoreHealth)
+
 	/** Current Mana, used to execute special abilities. Capped by MaxMana */
 	UPROPERTY(BlueprintReadOnly, Category = "Mana", ReplicatedUsing = OnRep_Mana)
 	FGameplayAttributeData Mana;
@@ -46,6 +51,21 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Mana", ReplicatedUsing = OnRep_MaxMana)
 	FGameplayAttributeData MaxMana;
 	ATTRIBUTE_ACCESSORS(UShooterAttributeSet, MaxMana)
+
+	/** RestoreMana is its own attribute, since GameplayEffects may modify it */
+	UPROPERTY(BlueprintReadOnly, Category = "Mana", ReplicatedUsing = OnRep_RestoreMana)
+	FGameplayAttributeData RestoreMana;
+	ATTRIBUTE_ACCESSORS(UShooterAttributeSet, RestoreMana)
+
+	/** Coins of the Player Pawn , since GameplayEffects may modify it */
+	UPROPERTY(BlueprintReadOnly, Category = "Coin", ReplicatedUsing = OnRep_Coins)
+	FGameplayAttributeData Coins;
+	ATTRIBUTE_ACCESSORS(UShooterAttributeSet, Coins)
+
+	/** DeathCooldown of the PlayerPawn to Die, since GameplayEffects may modify it */
+	UPROPERTY(BlueprintReadOnly, Category = "Die", ReplicatedUsing = OnRep_DeathCooldown)
+	FGameplayAttributeData DeathCooldown;
+	ATTRIBUTE_ACCESSORS(UShooterAttributeSet, DeathCooldown)
 
 	/** AttackPower of the attacker is multiplied by the base Damage to reduce health, so 1.0 means no bonus */
 	UPROPERTY(BlueprintReadOnly, Category = "Damage", ReplicatedUsing = OnRep_AttackPower)
@@ -79,10 +99,22 @@ protected:
 	virtual void OnRep_MaxHealth();
 
 	UFUNCTION()
+	virtual void OnRep_RestoreHealth();
+
+	UFUNCTION()
 	virtual void OnRep_Mana();
 
 	UFUNCTION()
 	virtual void OnRep_MaxMana();
+
+	UFUNCTION()
+	virtual void OnRep_RestoreMana();
+
+	UFUNCTION()
+	virtual void OnRep_Coins();
+
+	UFUNCTION()
+	virtual void OnRep_DeathCooldown();
 
 	UFUNCTION()
 	virtual void OnRep_AttackPower();

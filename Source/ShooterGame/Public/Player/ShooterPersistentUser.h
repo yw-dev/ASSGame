@@ -121,6 +121,10 @@ protected:
 	/** Triggers a save of this data. */
 	void SavePersistentUser();
 
+	/** Map of slotted items */
+	UPROPERTY()
+	TMap<FShooterItemSlot, FPrimaryAssetId> SlotItems;
+
 	/** Lifetime count of kills */
 	UPROPERTY()
 	int32 Kills;

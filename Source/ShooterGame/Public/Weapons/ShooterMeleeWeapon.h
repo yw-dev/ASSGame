@@ -133,6 +133,16 @@ public:
 
 	virtual void Destroyed() override;
 
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+
+	//UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
+	//void BeginWeaponAttack(FGameplayTag EventTag, float AttackDelayTime, int32 AttackDelayCount) override;
+
+	//UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
+	//void EndWeaponAttack() override;
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// Inventory
