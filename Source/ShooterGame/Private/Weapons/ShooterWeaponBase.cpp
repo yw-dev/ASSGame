@@ -11,7 +11,7 @@ AShooterWeaponBase::AShooterWeaponBase(const FObjectInitializer& ObjectInitializ
 	Mesh3P->MeshComponentUpdateFlag = EMeshComponentUpdateFlag::OnlyTickPoseWhenRendered;
 	Mesh3P->bReceivesDecals = false;
 	Mesh3P->CastShadow = true;
-	Mesh3P->SetCollisionObjectType(ECC_WorldDynamic);
+	//Mesh3P->SetCollisionObjectType(ECC_WorldDynamic);
 	Mesh3P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Mesh3P->SetupAttachment(GetRootComponent());
@@ -22,12 +22,12 @@ AShooterWeaponBase::AShooterWeaponBase(const FObjectInitializer& ObjectInitializ
 	CapsuleCollision->SetCollisionObjectType(ECC_Pawn);
 	CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	//CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
-	CapsuleCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-	CapsuleCollision->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_TC_WEAPON, ECR_Block);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_PROJECTILE, ECR_Ignore);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_WEAPON, ECR_Overlap);
-	CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_MARGIC, ECR_Ignore);
+	//CapsuleCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	//CapsuleCollision->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_TC_WEAPON, ECR_Block);
+	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_PROJECTILE, ECR_Ignore);
+	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_WEAPON, ECR_Overlap);
+	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_MARGIC, ECR_Ignore);
 	CapsuleCollision->SetupAttachment(GetRootComponent());
 
 	LastFireTime = 0.0f;
@@ -79,15 +79,17 @@ void AShooterWeaponBase::Tick(float DeltaTime)
 
 void AShooterWeaponBase::NotifyActorBeginOverlap(AActor* OtherActor)
 {
+	UE_LOG(LogTemp, Warning, TEXT("WeaponBase::NotifyActorBeginOverlap()"));
 	Super::NotifyActorBeginOverlap(OtherActor);
 	if (GetInstigator()->GetClass() != OtherActor->GetClass() && bIsAttacking == true)
 	{
 		//this->GetInstigator();
-		FGameplayEventData EventData;
-		EventData.Instigator = GetInstigator();
-		EventData.Target = OtherActor;
+		FGameplayEventData Payload;
+		Payload.Instigator = GetInstigator();
+		Payload.Target = OtherActor;
 		//FGameplayTag EventTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Event.Montage.Shared.WeaponHit"));
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetInstigator(), AttachEventTag, EventData);
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetInstigator(), AttachEventTag, Payload);
+		UE_LOG(LogTemp, Warning, TEXT("WeaponBase::SendGameplayEventToActor()"));
 	}
 }
 

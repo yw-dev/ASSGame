@@ -62,7 +62,8 @@ public:
 
 	TMap<FName, FActorRepListRefView> AlwaysRelevantStreamingLevelActors;
 
-	void OnCharacterWeaponChange(AShooterCharacter* Character, AShooterWeaponBase* NewWeapon, AShooterWeaponBase* OldWeapon);
+	void OnCharacterCurrentWeaponChange(AShooterCharacter* Character, AShooterWeaponBase* NewWeapon, AShooterWeaponBase* OldWeapon);
+	void OnCharacterStandbyWeaponChange(AShooterCharacter* Character, AShooterWeaponBase* NewWeapon);
 
 #if WITH_GAMEPLAY_DEBUGGER
 	void OnGameplayDebuggerOwnerChange(AGameplayDebuggerCategoryReplicator* Debugger, APlayerController* OldOwner);

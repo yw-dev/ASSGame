@@ -118,14 +118,22 @@ void UShooterPlayerAbility::UpdateAbility(const TMap<FShooterItemSlot, UShooterI
 
 }
 
-void UShooterPlayerAbility::UpdateHP()
+void UShooterPlayerAbility::UpdateHPWidget(float InHealth, float InMaxHealth, float InRestoreHealth)
 {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerAbility::UpdateHPWidget()"));
+	SetHealthPercent(InHealth / InMaxHealth);
+	SetCurrentHealth(FText::FromString(FString::FromInt(InHealth)));
+	SetMaxHealth(FText::FromString(FString::FromInt(InMaxHealth)));
+	SetRestoreHealth(FText::FromString(FString::FromInt(InRestoreHealth)));
 
 }
 
-void UShooterPlayerAbility::UpdateMP()
+void UShooterPlayerAbility::UpdateMPWidget(float InMona, float InMaxMona, float InRestoreMona)
 {
-
+	SetManaPercent(InMona / InMaxMona);
+	SetCurrentMana(FText::FromString(FString::FromInt(InMona)));
+	SetMaxMana(FText::FromString(FString::FromInt(InMaxMona)));
+	SetRestoreMana(FText::FromString(FString::FromInt(InRestoreMona)));
 }
 
 void UShooterPlayerAbility::OnHPChanged(float InHealth, float InMaxHealth, float InRestoreHealth)

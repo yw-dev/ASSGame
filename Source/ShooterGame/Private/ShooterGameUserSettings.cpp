@@ -15,7 +15,7 @@ void UShooterGameUserSettings::SetToDefaults()
 
 	GraphicsQuality = 1;	
 	bIsLanMatch = true;
-	bIsDedicatedServer = false;
+	bIsDedicatedServer = true;
 }
 
 void UShooterGameUserSettings::ApplySettings(bool bCheckForCommandLineOverrides)

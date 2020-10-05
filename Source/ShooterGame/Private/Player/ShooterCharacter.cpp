@@ -39,7 +39,8 @@ FAutoConsoleVariableRef CVarNetEnablePauseRelevancy(
 	TEXT("0: Disable, 1: Enable"),
 	ECVF_Cheat);
 
-FOnShooterCharacterWeaponChange AShooterCharacter::NotifyWeaponChange;
+FOnCharacterCurrentWeaponChange AShooterCharacter::NotifyCurrentWeaponChange;
+FOnCharacterStandbyWeaponChange AShooterCharacter::NotifyStandbyWeaponChange;
 FOnShooterCharacterWeaponTypeChange AShooterCharacter::NotifyWeaponTypeChange;
 FOnShooterCharacterPurchaseDelegate AShooterCharacter::NotifyPurchaseChange;
 
@@ -93,7 +94,7 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 
 	// Create the attribute set, this replicates by default
 	//AttributeSet = CreateDefaultSubobject<UShooterAttributeSet>(TEXT("AttributeSet"));
-	ActivateWeaponSlot = FShooterItemSlot(UShooterAssetManager::SkillItemType, -1);
+	CurrentWeaponSlot = FShooterItemSlot(UShooterAssetManager::SkillItemType, -1);
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -108,6 +109,7 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 
 	// some params or flag default value
 	CharacterLevel = 1;
+	bReplicates = true;
 	bAbilitiesInitialized = false;
 
 	bEnableComboPeriod = false;
@@ -198,6 +200,7 @@ void AShooterCharacter::PawnClientRestart()
 	if (HUD)
 	{
 		HUD->ShowPlayerDashboard();
+		HUD->ShowTeambar();
 	}
 	/*
 	if (PC)
@@ -957,39 +960,40 @@ void AShooterCharacter::SpawnInventoryActor(class UShooterItem* NewItem)
 		break;
 	}
 
-	FShooterItemSlot NewSlot;
+	FShooterItemSlot ItemSlot;
 	UShooterWeaponItem* WeaponItem = Cast<UShooterWeaponItem>(NewItem);
 	AShooterPlayerController* PC = Cast<AShooterPlayerController>(Controller);
-	PC->GetInventoryItemSlot(WeaponItem, NewSlot);
+	PC->GetInventoryItemSlot(WeaponItem, ItemSlot);
 	//PC->GetPlayerDashboard()->GetInventoryWidget()->WeaponSlotChangedDelegate.Broadcast(NewItem, true);
 	//PC->NotifyWeaponSlotChanged(NewItem, true);
 
-	if (!NewSlot.IsValid())
+	if (!ItemSlot.IsValid())
 	{
-		NewSlot = FShooterItemSlot(WeaponItem->ItemType, 0);
+		ItemSlot = FShooterItemSlot(WeaponItem->ItemType, 0);
 	}
-	const TMap<FShooterItemSlot, UShooterItem*>& SlottedItem = PC->GetSlottedItemMap();
-	int32 num = SlottedItem.Num();
+	//const TMap<FShooterItemSlot, UShooterItem*>& SlottedItem = PC->GetSlottedItemMap();
+	//int32 num = SlottedItem.Num();
 
-	for (const TPair<FShooterItemSlot, UShooterItem*>& Pair : PC->GetSlottedItemMap())
-	{
-		if (Pair.Value)
-		{
-			FPrimaryAssetId AssetId = Pair.Value->GetPrimaryAssetId();
+	//for (const TPair<FShooterItemSlot, UShooterItem*>& Pair : PC->GetSlottedItemMap())
+	//{
+	//	if (Pair.Value)
+	//	{
+	//		FPrimaryAssetId AssetId = Pair.Value->GetPrimaryAssetId();
 
-			if (Pair.Value->ItemType == UShooterAssetManager::WeaponItemType)
+			if (NewItem->ItemType == UShooterAssetManager::WeaponItemType)
 			{
 				//Items.Add(Pair.Key);
-				UShooterWeaponItem* Weapon = Cast<UShooterWeaponItem>(Pair.Value);
+				UShooterWeaponItem* Weapon = Cast<UShooterWeaponItem>(NewItem);
 
 				FActorSpawnParameters SpawnInfo;
 				SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 				AShooterWeaponBase* NewWeapon = UShooterBlueprintLibrary::SpawnActor<AShooterWeaponBase>(GetWorld(), Weapon->WeaponActor, SpawnInfo);
-				AddWeapon(Pair.Key, NewWeapon);
+				AddWeapon(ItemSlot, NewWeapon);
 				EquipWeapon(NewWeapon);
 			}
-		}
-	}/*
+	//	}
+	//}
+	/*
 	if (!FindWeapon(NewSlot) && IsLocallyControlled())
 	{
 		// server execu...
@@ -1267,6 +1271,23 @@ void AShooterCharacter::OnRep_CurrentWeapon(AShooterWeaponBase* LastWeapon)
 	SetCurrentWeapon(CurrentWeapon, LastWeapon);
 }
 
+void AShooterCharacter::OnRep_StandbyWeapon(AShooterWeaponBase* NewWeapon)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Character::OnRep_NextWeapon()"));
+	SetStandbyWeapon(NewWeapon);
+}
+
+void AShooterCharacter::SetStandbyWeapon(class AShooterWeaponBase* NewWeapon)
+{
+	if (StandbyWeapon != nullptr)
+	{
+		StandbyWeapon = nullptr;
+	}
+	StandbyWeapon = NewWeapon;
+	NotifyStandbyWeaponChange.Broadcast(this, NewWeapon);
+}
+
+
 void AShooterCharacter::SetCurrentWeaponType(EShooterWeaponType ActiveType)
 {
 	CurrentWeaponType = ActiveType;
@@ -1305,10 +1326,12 @@ void AShooterCharacter::SetCurrentWeapon(AShooterWeaponBase* NewWeapon, AShooter
 	if (LastWeapon != NULL)
 	{
 		LocalLastWeapon = LastWeapon;
+		SetStandbyWeapon(LastWeapon);
 	}
 	else if (NewWeapon != CurrentWeapon)
 	{
 		LocalLastWeapon = CurrentWeapon;
+		SetStandbyWeapon(CurrentWeapon);
 	}
 
 	// unequip previous
@@ -1325,11 +1348,11 @@ void AShooterCharacter::SetCurrentWeapon(AShooterWeaponBase* NewWeapon, AShooter
 
 		NewWeapon->OnEquip(LastWeapon);
 	}
-	GetInventoryItemSlot(CurrentWeapon, ActivateWeaponSlot);
+	GetInventoryItemSlot(CurrentWeapon, CurrentWeaponSlot);
 	//ActivateWeaponSlot = FShooterItemSlot(UShooterAssetManager::WeaponItemType, GetInventoryItem(CurrentWeapon));
 	//UE_LOG(LogTemp, Warning, TEXT("GetActiveWeaponType() = %u"), (uint32)CurrentWeapon->GetActiveWeaponType());
 	//SetActiveType(CurrentWeapon->GetActiveWeaponType());
-	NotifyWeaponChange.Broadcast(this, CurrentWeapon, LocalLastWeapon);
+	NotifyCurrentWeaponChange.Broadcast(this, CurrentWeapon, LocalLastWeapon);
 	SetCurrentWeaponType(CurrentWeapon->GetCurrentWeaponType());
 }
 
@@ -1361,13 +1384,13 @@ void AShooterCharacter::StopAbilityFire()
 	if (bWantsToFire)
 	{
 		bWantsToFire = false;
-		if (CanUseAbility() && IsUsingSkill())
+		if (CanUseAnyAbility() && IsUsingSkill())
 		{
 			CurrentWeapon->StopFire();
 		}
 	}
 }
-
+/*
 bool AShooterCharacter::IsUsingMelee()
 {
 	TArray<UShooterGameplayAbility*> ActiveAbilities;
@@ -1375,7 +1398,7 @@ bool AShooterCharacter::IsUsingMelee()
 	FGameplayTag AbilityTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Ability.Melee"));
 	GetActiveAbilitiesWithTags(FGameplayTagContainer(AbilityTag), ActiveAbilities);
 	return ActiveAbilities.Num() > 0;
-}
+}*/
 
 bool AShooterCharacter::IsUsingRanged()
 {
@@ -1428,7 +1451,7 @@ void AShooterCharacter::AbilityFire()
 	if (bWantsToFire)
 	{
 		bWantsToFire = false;
-		if (CanUseAbility())
+		if (CanUseAnyAbility())
 		{
 			CurrentWeapon->StopFire();
 		}
@@ -1500,7 +1523,12 @@ void AShooterCharacter::StartWeaponFire()
 	if (!HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Role < ROLE_Authority"));
+		//DoMeleeAttack();
 		ServerStartFire();
+		if (bEnableComboPeriod == true) 
+		{
+			DoMeleeAttack();
+		}
 	}
 	if (CurrentWeapon && HasAuthority())
 	{
@@ -1531,7 +1559,7 @@ void AShooterCharacter::WeaponAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::WeaponAttack()"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("WeaponAttack :"));
-	if (CanUseAbility())
+	if (CanUseAnyAbility())
 	{
 		TArray<UShooterGameplayAbility*> ActiveAbilities;
 
@@ -1540,7 +1568,7 @@ void AShooterCharacter::WeaponAttack()
 		if (ActiveAbilities.Num() > 0)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("ActiveAbilities : %d"), ActiveAbilities.Num()));
-			ActivateAbilitiesWithItemSlot(ActivateWeaponSlot, true);
+			ActivateAbilitiesWithItemSlot(CurrentWeaponSlot, true);
 			ActivateAbilitiesWithTags(FGameplayTagContainer(AbilityTag), true);
 			//return true;
 		}
@@ -1552,10 +1580,10 @@ void AShooterCharacter::DoMeleeAttack()
 	UE_LOG(LogTemp, Warning, TEXT("Character::DoMeleeAttack()"));
 	Super::DoMeleeAttack();
 
-	if (CanUseAbility())
+	if (CanUseAnyAbility())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Any Abilities Can Use."));
-		if (IsUsingMelee() && bEnableComboPeriod) {
+		if (IsUsingMelee()) {
 			UE_LOG(LogTemp, Warning, TEXT("Character::JumpSectionForCombo--------"));
 			JumpSectionForCombo();
 		}
@@ -1563,7 +1591,7 @@ void AShooterCharacter::DoMeleeAttack()
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Character::ActivateAbilitiesWithItemSlot--------"));
 			bEnableComboPeriod = true;
-			ActivateAbilitiesWithItemSlot(ActivateWeaponSlot, true);
+			ActivateAbilitiesWithItemSlot(CurrentWeaponSlot, true);
 		}
 	}
 }
@@ -1572,8 +1600,7 @@ void AShooterCharacter::DoSkillAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::DoSkillAttack()"));
 	Super::DoSkillAttack();
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("DoMeleeAttack_Implementation :"));
-	if (CanUseAbility())
+	if (CanUseAnyAbility())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Character::ActivateAbilitiesWithItemSlot--------"));
 		TArray<UShooterGameplayAbility*> ActiveAbilities;
@@ -1766,7 +1793,7 @@ void AShooterCharacter::JumpSectionForCombo()
 			UseMesh->AnimScriptInstance->Montage_SetNextSection(CurSection, NextSection, UseMesh->AnimScriptInstance->GetCurrentActiveMontage());
 			//SetEnableComboPeriod(false);
 		}
-		bEnableComboPeriod = false;
+		//bEnableComboPeriod = false;
 	}
 }
 
@@ -1926,11 +1953,11 @@ void AShooterCharacter::OnNextWeapon()
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 	if (MyPC && MyPC->IsGameInputAllowed())
 	{
-		if (InventoryItems.Num() >= 2 && (CurrentWeapon == NULL || CurrentWeapon->GetCurrentState() != EWeaponState::Equipping))
+		if (WaponEquips.Num() >= 2 && (CurrentWeapon == NULL || CurrentWeapon->GetCurrentState() != EWeaponState::Equipping))
 		{
 			const int32 CurrentWeaponIdx = WaponEquips.IndexOfByKey(CurrentWeapon);
-			AShooterWeaponBase* NextWeapon = WaponEquips[(CurrentWeaponIdx + 1) % InventoryItems.Num()];
-			GetInventoryItemSlot(NextWeapon, ActivateWeaponSlot);
+			AShooterWeaponBase* NextWeapon = WaponEquips[(CurrentWeaponIdx + 1) % WaponEquips.Num()];
+			GetInventoryItemSlot(NextWeapon, CurrentWeaponSlot);
 			SetCurrentWeaponType(NextWeapon->CommonConfig.CurrentWeaponType);
 			EquipWeapon(NextWeapon);
 		}
@@ -1942,11 +1969,11 @@ void AShooterCharacter::OnPrevWeapon()
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 	if (MyPC && MyPC->IsGameInputAllowed())
 	{
-		if (InventoryItems.Num() >= 2 && (CurrentWeapon == NULL || CurrentWeapon->GetCurrentState() != EWeaponState::Equipping))
+		if (WaponEquips.Num() >= 2 && (CurrentWeapon == NULL || CurrentWeapon->GetCurrentState() != EWeaponState::Equipping))
 		{
 			const int32 CurrentWeaponIdx = WaponEquips.IndexOfByKey(CurrentWeapon);
-			AShooterWeaponBase* PrevWeapon = WaponEquips[(CurrentWeaponIdx - 1 + InventoryItems.Num()) % InventoryItems.Num()];
-			GetInventoryItemSlot(PrevWeapon, ActivateWeaponSlot);
+			AShooterWeaponBase* PrevWeapon = WaponEquips[(CurrentWeaponIdx - 1 + WaponEquips.Num()) % WaponEquips.Num()];
+			GetInventoryItemSlot(PrevWeapon, CurrentWeaponSlot);
 			//ActivateWeaponSlot = FShooterItemSlot(UShooterAssetManager::WeaponItemType, Inventory.IndexOfByKey(PrevWeapon));
 			SetCurrentWeaponType(PrevWeapon->CommonConfig.CurrentWeaponType);
 			EquipWeapon(PrevWeapon);
@@ -2142,6 +2169,7 @@ void AShooterCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > &
 	DOREPLIFETIME_CONDITION(AShooterCharacter, LastTakeHitInfo, COND_Custom);
 
 	// everyone
+	DOREPLIFETIME(AShooterCharacter, WaponEquips);
 	DOREPLIFETIME(AShooterCharacter, CurrentWeapon);
 	DOREPLIFETIME(AShooterCharacter, CurrentWeaponType);
 	DOREPLIFETIME(AShooterCharacter, Health);

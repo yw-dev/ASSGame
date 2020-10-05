@@ -35,7 +35,8 @@ enum class EPawnMode : uint8
 };
 
 
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnShooterCharacterWeaponChange, AShooterCharacter*, AShooterWeaponBase* /* new */, AShooterWeaponBase* /*old */);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnCharacterCurrentWeaponChange, AShooterCharacter*, AShooterWeaponBase* /* new */, AShooterWeaponBase* /*old */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCharacterStandbyWeaponChange, AShooterCharacter*, AShooterWeaponBase* /* new */);
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterWeaponTypeChange, AShooterCharacter*, EShooterWeaponType);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterPurchaseDelegate, AShooterCharacter*, UShooterItem* /* new */);
@@ -167,7 +168,7 @@ public:
 	void StopWeaponFire();
 
 	/** check if pawn can Use any Melee Ability */
-	bool IsUsingMelee();
+	//bool IsUsingMelee();
 
 	/** check if pawn can Use any Ranged Ability */
 	bool IsUsingRanged();
@@ -360,7 +361,10 @@ public:
 	EPawnState::Type GetCurrentState() const;
 
 	/** Global notification when a pawns weapon changes. Needed for replication graph. Use OnWeaponEquippedDelegate for actor notification */
-	static FOnShooterCharacterWeaponChange NotifyWeaponChange;
+	static FOnCharacterCurrentWeaponChange NotifyCurrentWeaponChange;
+
+	/** Global notification when a pawns weapon changes. Needed for replication graph. Use OnWeaponEquippedDelegate for actor notification */
+	static FOnCharacterStandbyWeaponChange NotifyStandbyWeaponChange;
 
 	/** Global notification when a pawns weapon changes. Needed for replication graph. Use OnWeaponEquippedDelegate for actor notification */
 	static FOnShooterCharacterWeaponTypeChange NotifyWeaponTypeChange;
@@ -453,11 +457,19 @@ protected:
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_CurrentWeapon)
 	class AShooterWeaponBase* CurrentWeapon;
 
+	/** currently equipped weapon */
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_StandbyWeapon)
+	class AShooterWeaponBase* StandbyWeapon;
+
+	// Current WeaponType of the Pawn
+	UPROPERTY(VisibleAnywhere, Transient, ReplicatedUsing = OnRep_CurrentWeaponType)
+	EShooterWeaponType CurrentWeaponType;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Inventory)
 	class AShooterWeaponBase* ActivateWeapon;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Inventory)
-	FShooterItemSlot ActivateWeaponSlot;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Inventory)
+	//FShooterItemSlot ActivateWeaponSlot;
 
 	/** Replicate where this pawn was last hit and damaged */
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_LastTakeHitInfo)
@@ -615,10 +627,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Health)
 	float Health;
 
-	// Current WeaponType of the Pawn
-	UPROPERTY(VisibleAnywhere, Transient, ReplicatedUsing = OnRep_CurrentWeaponType)
-	EShooterWeaponType CurrentWeaponType;
-
 	/** Take damage, handle death */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
 	
@@ -711,6 +719,10 @@ protected:
 	UFUNCTION()
 	void SetCurrentWeapon(class AShooterWeaponBase* NewWeapon, class AShooterWeaponBase* LastWeapon = NULL);
 
+	/** updates Next weapon */
+	UFUNCTION()
+	void SetStandbyWeapon(class AShooterWeaponBase* NewWeapon);
+
 	UFUNCTION()
 	void SetCurrentWeaponType(EShooterWeaponType ActivePose = EShooterWeaponType::None);
 
@@ -720,6 +732,10 @@ protected:
 	UFUNCTION()
 	/** current weapon Rep handler */
 	void OnRep_CurrentWeapon(class AShooterWeaponBase* LastWeapon);
+
+	UFUNCTION()
+	/** standby weapon Rep handler */
+	void OnRep_StandbyWeapon(class AShooterWeaponBase* LastWeapon);
 
 	UFUNCTION()
 	void OnRep_CurrentWeaponType(EShooterWeaponType weaponType);

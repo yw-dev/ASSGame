@@ -358,7 +358,8 @@ void UShooterReplicationGraph::InitGlobalActorClassSettings()
 	//	So for now, erring on the side of a cleaning dependencies between classes.
 	// -------------------------------------------------------
 	
-	AShooterCharacter::NotifyWeaponChange.AddUObject(this, &UShooterReplicationGraph::OnCharacterWeaponChange);
+	AShooterCharacter::NotifyCurrentWeaponChange.AddUObject(this, &UShooterReplicationGraph::OnCharacterCurrentWeaponChange);
+	AShooterCharacter::NotifyStandbyWeaponChange.AddUObject(this, &UShooterReplicationGraph::OnCharacterStandbyWeaponChange);
 
 #if WITH_GAMEPLAY_DEBUGGER
 	AGameplayDebuggerCategoryReplicator::NotifyDebuggerOwnerChange.AddUObject(this, &UShooterReplicationGraph::OnGameplayDebuggerOwnerChange);
@@ -520,7 +521,7 @@ void UShooterReplicationGraph::RouteRemoveNetworkActorToNodes(const FNewReplicat
 #define CHECK_WORLDS(X)
 #endif
 
-void UShooterReplicationGraph::OnCharacterWeaponChange(AShooterCharacter* Character, AShooterWeaponBase* NewWeapon, AShooterWeaponBase* OldWeapon)
+void UShooterReplicationGraph::OnCharacterCurrentWeaponChange(AShooterCharacter* Character, AShooterWeaponBase* NewWeapon, AShooterWeaponBase* OldWeapon)
 {
 	CHECK_WORLDS(Character);
 	
@@ -528,9 +529,21 @@ void UShooterReplicationGraph::OnCharacterWeaponChange(AShooterCharacter* Charac
 	ActorInfo.DependentActorList.PrepareForWrite();
 	if (OldWeapon)
 	{
-		ActorInfo.DependentActorList.Remove(OldWeapon);
+		//ActorInfo.DependentActorList.Remove(OldWeapon);
 	}
 
+	if (NewWeapon)
+	{
+		ActorInfo.DependentActorList.Add(NewWeapon);
+	}
+}
+
+void UShooterReplicationGraph::OnCharacterStandbyWeaponChange(AShooterCharacter* Character, AShooterWeaponBase* NewWeapon)
+{
+	CHECK_WORLDS(Character);
+
+	FGlobalActorReplicationInfo& ActorInfo = GlobalActorReplicationInfoMap.Get(Character);
+	ActorInfo.DependentActorList.PrepareForWrite();
 	if (NewWeapon)
 	{
 		ActorInfo.DependentActorList.Add(NewWeapon);

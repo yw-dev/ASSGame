@@ -52,6 +52,11 @@ AShooterHUD::AShooterHUD(const FObjectInitializer& ObjectInitializer) : Super(Ob
 		//StoreWidgetClass = PlayerBoardWidgetClass.Class;
 		PlayerDashboard = CreateWidget<UShooterPlayerView>(GetWorld(), PlayerBoardWidgetClass.Class);
 	}
+	static ConstructorHelpers::FClassFinder<UShooterTeamBar> TeamBarWidgetClass(TEXT("/Game/Blueprints/WidgetBP/BP_TeamBar"));
+	if (TeamBarWidgetClass.Class != NULL)
+	{
+		Teambar = CreateWidget<UShooterTeamBar>(GetWorld(), TeamBarWidgetClass.Class);
+	}
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HitTextureOb(TEXT("/Game/UI/HUD/HitIndicator"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HUDMainTextureOb(TEXT("/Game/UI/HUD/HUDMain"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HUDAssets02TextureOb(TEXT("/Game/UI/HUD/HUDAssets02"));
@@ -598,7 +603,7 @@ void AShooterHUD::DrawHUD()
 		DrawDebugInfoString(NetModeDesc, Canvas->OrgX + Offset*ScaleUI, Canvas->OrgY + 5*Offset*ScaleUI, true, true, HUDLight);
 	}
 
-	DrawMatchTimerAndPosition();
+	//DrawMatchTimerAndPosition();
 
 	float MessageOffset = (Canvas->ClipY / 4.0)* ScaleUI;
 	if (MatchState == EShooterMatchState::Playing)
@@ -654,7 +659,7 @@ void AShooterHUD::DrawHUD()
 
 	// Render the info messages such as wating to respawn - these will be drawn below any 'killed player' message.
 	ShowInfoItems(MessageOffset, 1.0f); 
-	ShowMapboard();
+	//ShowMapboard();
 
 }
 
@@ -978,8 +983,12 @@ void AShooterHUD::RefreshInventoryWidget(class AShooterPlayerState* KillerPlayer
 				PlayerDashboard->GetInventoryWidget()->SetCoins(FText::AsNumber(MyPlayerState->GetNumCoins()));
 			}
 		}
-	}
-	
+	}	
+}
+
+void AShooterHUD::RefreshAbilityWidget(float InHealth, float InMaxHealth, float InRestoreHealth)
+{
+	PlayerDashboard->GetAbilityWidget()->UpdateHPWidget(InHealth, InMaxHealth, InRestoreHealth);
 }
 
 void AShooterHUD::ShowDeathMessage(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* VictimPlayerState, const UDamageType* KillerDamageType)
@@ -1224,10 +1233,50 @@ bool AShooterHUD::ShowScoreboard(bool bEnable, bool bFocus)
 	return true;
 }
 
+void AShooterHUD::ShowTeambar()
+{
+	UE_LOG(LogTemp, Warning, TEXT("HUD::ShowTeambar()"));
+
+	AShooterPlayerController* ShooterPC = Cast<AShooterPlayerController>(PlayerOwner);
+	// If the game menu is visible dont show the chat menu
+	if ((ShooterPC == NULL) || ShooterPC->IsGameMenuVisible() || GetMatchState() == EShooterMatchState::Warmup || GetNetMode() == NM_Standalone)
+	{
+		return;
+	}
+	if (Teambar != nullptr)
+	{
+		Teambar->SetOwningPlayer(PlayerOwner);
+		//Teambar->InitWidget();
+
+		SAssignNew(TeambarOverlay, SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(EHorizontalAlignment::HAlign_Center)
+		.VAlign(EVerticalAlignment::VAlign_Top)
+		[
+			SNew(SBox)
+			.WidthOverride(820)
+			.HeightOverride(80)
+			[
+				Teambar->TakeWidget()
+			]
+		];
+	}
+	if (TeambarOverlay)
+	{
+		GEngine->GameViewport->AddViewportWidgetForPlayer(PlayerOwner->GetLocalPlayer(), TeambarOverlay.ToSharedRef(), 1);
+	}
+}
+
 void AShooterHUD::ShowPlayerDashboard()
 {
 	UE_LOG(LogTemp, Warning, TEXT("HUD::ShowPlayerDashboard()"));
 
+	AShooterPlayerController* ShooterPC = Cast<AShooterPlayerController>(PlayerOwner);
+	// If the game menu is visible dont show the chat menu
+	if ((ShooterPC == NULL) || ShooterPC->IsGameMenuVisible() || GetMatchState() == EShooterMatchState::Warmup || GetNetMode() == NM_Standalone )
+	{
+		return;
+	}
 	if (PlayerDashboard != nullptr)
 	{
 		PlayerDashboard->SetOwningPlayer(PlayerOwner);
@@ -1239,8 +1288,8 @@ void AShooterHUD::ShowPlayerDashboard()
 			.VAlign(EVerticalAlignment::VAlign_Bottom)
 			[
 				SNew(SBox)
-				.HeightOverride(230)
-				.WidthOverride(768)
+				.HeightOverride(210)
+				.WidthOverride(680)
 				[
 					PlayerDashboard->TakeWidget()
 				]
@@ -1255,6 +1304,12 @@ void AShooterHUD::ShowPlayerDashboard()
 
 void AShooterHUD::ShowMapboard()
 {
+	AShooterPlayerController* ShooterPC = Cast<AShooterPlayerController>(PlayerOwner);
+	// If the game menu is visible dont show the chat menu
+	if ((ShooterPC == NULL) || ShooterPC->IsGameMenuVisible() || GetMatchState() == EShooterMatchState::Warmup || GetNetMode() == NM_Standalone)
+	{
+		return;
+	}
 	SAssignNew(MapboardOverlay, SOverlay)
 	+ SOverlay::Slot()
 	.HAlign(EHorizontalAlignment::HAlign_Right)

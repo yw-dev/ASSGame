@@ -6,7 +6,7 @@
 #include "Weapons/ShooterWeaponBase.h"
 #include "Items/ShooterItem.h"
 #include "AbilitySystemGlobals.h"
-#include "Abilities/ShooterGameplayAbility.h"
+#include "Abilities/ShooterGameplayAbility.h" 
 
 
 // Sets default values
@@ -459,11 +459,11 @@ void AShooterCharacterBase::PlayHighPriorityMontage(UAnimMontage* Montage, FName
 void AShooterCharacterBase::DoMeleeAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::DoMeleeAttack()"));
-	/*
-	if (HasAuthority() && !IsUsingMelee() && CanUseAnyAbility())
+	
+	if (IsUsingMelee() && CanUseAnyAbility())
 	{
 		ActivateAbilitiesWithItemSlot(CurrentWeaponSlot, true);
-	}*/
+	}
 }
 
 void AShooterCharacterBase::DoSkillAttack()
@@ -676,6 +676,11 @@ void AShooterCharacterBase::OnHealthChanged_Implementation(float DeltaValue, con
 
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 	//MyPC->NotifyHPChanged(GetHealth(), GetMaxHealth(), GetRestoreHealth());
+	//AShooterHUD* ShooterHUD = MyPC->GetShooterHUD();
+	if (MyPC != nullptr && bAbilitiesInitialized)
+	{
+		MyPC->ClientReceivePlayerStateChangeEvent(GetHealth(), GetMaxHealth(), GetRestoreHealth());
+	}
 }
 
 void AShooterCharacterBase::HandleManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)

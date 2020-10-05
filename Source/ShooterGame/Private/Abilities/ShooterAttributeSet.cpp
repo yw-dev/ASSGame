@@ -220,7 +220,7 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 				//damageEvent.HitInfo = HitResult;
 				//TargetCharacter->TakeDamage(LocalDamageDone, damageEvent, SourceController, SourceActor);
 				// This is proper damage
-				//TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter, SourceActor);
+				TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter, SourceActor);
 				//TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter->GetController(), SourceActor);
 
 				// Call for all health changes

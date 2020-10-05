@@ -4,7 +4,7 @@
 #include "Weapons/ShooterWeapon.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Bots/ShooterAIController.h"
-#include "Online/ShooterPlayerState.h"
+#include "Online/ShooterPlayerState.h" 
 #include "UI/ShooterHUD.h"
 
 AShooterWeapon::AShooterWeapon(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

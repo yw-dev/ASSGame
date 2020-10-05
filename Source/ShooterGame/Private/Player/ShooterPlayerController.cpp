@@ -230,8 +230,8 @@ void AShooterPlayerController::SetPlayer( UPlayer* InPlayer )
 		ShooterShopMenu->Construct(Cast<ULocalPlayer>(Player));
 
 		//ShowPlayerDashboard();
-		ShowPlayerTarget();
-		ShowTeamBar();
+		//ShowPlayerTarget();
+		//ShowTeamBar();
 
 		FInputModeGameOnly InputMode;
 		SetInputMode(InputMode);
@@ -988,6 +988,16 @@ void AShooterPlayerController::ClientReceivePurchaseEvent_Implementation(const F
 	}
 }
 
+void AShooterPlayerController::ClientReceivePlayerStateChangeEvent_Implementation(float InHealth, float InMaxHealth, float InRestoreHealth)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Controller::ClientReceivePlayerStateChangeEvent_Implementation()"));
+	AShooterHUD* ShooterHUD = GetShooterHUD();
+	if (ShooterHUD)
+	{
+		ShooterHUD->RefreshAbilityWidget(InHealth, InMaxHealth, InRestoreHealth);
+	}
+}
+
 void AShooterPlayerController::SetCinematicMode(bool bInCinematicMode, bool bHidePlayer, bool bAffectsHUD, bool bAffectsMovement, bool bAffectsTurning)
 {
 	Super::SetCinematicMode(bInCinematicMode, bHidePlayer, bAffectsHUD, bAffectsMovement, bAffectsTurning);
@@ -1359,10 +1369,10 @@ void AShooterPlayerController::NotifyHPChanged(float InHealth, float InMaxHealth
 void AShooterPlayerController::NotifyMPChanged(float InMana, float InMaxMana, float InRestoreMana)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::NotifyMPChanged()"));
-	if (PlayerDashboard)
+	/*if (PlayerDashboard)
 	{
 		PlayerDashboard->GetAbilityWidget()->MPChangedDelegate.Broadcast(InMana, InMaxMana, InRestoreMana);
-	}
+	}*/
 }
 
 UShooterPersistentUser* AShooterPlayerController::GetPersistentUser() const
@@ -2428,7 +2438,7 @@ void AShooterPlayerController::ReceiveUnPossess_Implementation(APawn* NewPawn)
 }
 
 /************************* HUD UI widgets *****************************/
-
+/*
 UShooterPlayerView* AShooterPlayerController::GetPlayerDashboard() const
 {
 	//check(PlayerDashboardContainer);
@@ -2557,7 +2567,7 @@ void AShooterPlayerController::ShowPlayerTarget()
 	{
 		GEngine->GameViewport->AddViewportWidgetContent(PlayerTargetOverlay.ToSharedRef(), 1);
 	}
-}
+}*/
 
 void AShooterPlayerController::OnToggleStoreboard()
 {

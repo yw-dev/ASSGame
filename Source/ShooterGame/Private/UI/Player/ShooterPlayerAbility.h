@@ -86,10 +86,10 @@ public:
 	void UpdateAbility(const TMap<FShooterItemSlot, UShooterItem*>& SkillItems);
 
 	UFUNCTION(BlueprintCallable, Category = "PlayerAbility")
-	void UpdateMP();
+	void UpdateMPWidget(float InMona, float InMaxMona, float InRestoreMona);
 
 	UFUNCTION(BlueprintCallable, Category = "PlayerAbility")
-	void UpdateHP();
+	void UpdateHPWidget(float InHealth, float InMaxHealth, float InRestoreHealth);
 
 	/** Sets the current Health value of the ProgressBar. */
 	UFUNCTION(BlueprintCallable, Category = "PlayerAbility | Progress")

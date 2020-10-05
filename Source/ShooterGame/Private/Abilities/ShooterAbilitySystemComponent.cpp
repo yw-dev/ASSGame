@@ -12,14 +12,12 @@ UShooterAbilitySystemComponent::UShooterAbilitySystemComponent() {}
 
 void UShooterAbilitySystemComponent::GetActiveAbilitiesWithTags(const FGameplayTagContainer& GameplayTagContainer, TArray<UShooterGameplayAbility*>& ActiveAbilities)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, TEXT("GetActiveAbilitiesWithTags()"));
 	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
 	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivate, false);
 
 	// Iterate the list of all ability specs
 	for (FGameplayAbilitySpec* Spec : AbilitiesToActivate)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, TEXT("GetActiveAbilitiesWithTags()"));
 		if (Spec)
 		{
 			// Iterate all instances on this ability spec

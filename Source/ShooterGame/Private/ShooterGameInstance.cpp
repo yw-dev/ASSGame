@@ -507,7 +507,7 @@ void UShooterGameInstance::StartGameInstance()
 FName UShooterGameInstance::GetInitialState()
 {
 	UE_LOG(LogTemp, Warning, TEXT("GameInstance::GetInitialState()"));
-	UE_LOG(LogOnline, Log, TEXT("UShooterGameInstance::GetInitialState"));
+	UE_LOG(LogOnline, Log, TEXT("GameInstance::GetInitialState"));
 #if SHOOTER_CONSOLE_UI	
 	// Start in the welcome screen state on consoles
 	return ShooterGameInstanceState::WelcomeScreen;
@@ -582,7 +582,7 @@ void UShooterGameInstance::ShowMessageThenGotoState( const FText& Message, const
 void UShooterGameInstance::ShowLoadingScreen()
 {
 	UE_LOG(LogTemp, Warning, TEXT("GameInstance::ShowLoadingScreen()"));
-	UE_LOG(LogOnline, Log, TEXT("UShooterGameInstance::ShowLoadingScreen"));
+	UE_LOG(LogOnline, Log, TEXT("GameInstance::ShowLoadingScreen"));
 	// This can be confusing, so here is what is happening:
 	//	For LoadMap, we use the IShooterGameLoadingScreenModule interface to show the load screen
 	//  This is necessary since this is a blocking call, and our viewport loading screen won't get updated.
@@ -606,7 +606,7 @@ void UShooterGameInstance::ShowLoadingScreen()
 bool UShooterGameInstance::LoadFrontEndMap(const FString& MapName)
 {
 	UE_LOG(LogTemp, Warning, TEXT("GameInstance::LoadFrontEndMap()"));
-	UE_LOG(LogOnline, Log, TEXT("UShooterGameInstance::LoadFrontEndMap(Map:%s)"), *MapName);
+	UE_LOG(LogOnline, Log, TEXT("GameInstance::LoadFrontEndMap(Map:%s)"), *MapName);
 	bool bSuccess = true;
 
 	// if already loaded, do nothing
@@ -661,7 +661,7 @@ AShooterGameSession* UShooterGameInstance::GetGameSession() const
 void UShooterGameInstance::TravelLocalSessionFailure(UWorld *World, ETravelFailure::Type FailureType, const FString& ReasonString)
 {
 	UE_LOG(LogTemp, Warning, TEXT("GameInstance::TravelLocalSessionFailure()"));
-	UE_LOG(LogOnline, Log, TEXT("UShooterGameInstance::TravelLocalSessionFailure"));
+	UE_LOG(LogOnline, Log, TEXT("GameInstance::TravelLocalSessionFailure"));
 	AShooterPlayerController_Menu* const FirstPC = Cast<AShooterPlayerController_Menu>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	if (FirstPC != nullptr)
 	{
@@ -718,7 +718,7 @@ void UShooterGameInstance::MaybeChangeState()
 
 void UShooterGameInstance::EndCurrentState(FName NextState)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *FString::Printf(TEXT("UShooterGameInstance::EndCurrentState( %s )"), *NextState.ToString()));
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *FString::Printf(TEXT("GameInstance::EndCurrentState( %s )"), *NextState.ToString()));
 
 	// per-state custom ending code here
 	if (CurrentState == ShooterGameInstanceState::PendingInvite)
@@ -757,7 +757,7 @@ void UShooterGameInstance::BeginNewState(FName NewState, FName PrevState)
 {
 	//UE_LOG(LogTemp, Warning, TEXT("GameInstance::BeginNewState()"));
 	//UE_LOG(LogLoad, Fatal, TEXT("%s"), *FString::Printf(TEXT("Failed to enter %s: %s. Please check the log for errors."), *MapName, *Error));
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *FString::Printf(TEXT("UShooterGameInstance::BeginNewState( CurrentState:%s  NewState:%s )"), *CurrentState.ToString(), *NewState.ToString()));
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *FString::Printf(TEXT("GameInstance::BeginNewState( CurrentState:%s  NewState:%s )"), *CurrentState.ToString(), *NewState.ToString()));
 	// per-state custom starting code here
 
 	if (NewState == ShooterGameInstanceState::PendingInvite)
@@ -1090,7 +1090,7 @@ void UShooterGameInstance::BeginMessageMenuState()
 	UE_LOG(LogTemp, Warning, TEXT("GameInstance::BeginMessageMenuState()"));
 	if (PendingMessage.DisplayString.IsEmpty())
 	{
-		UE_LOG(LogOnlineGame, Warning, TEXT("UShooterGameInstance::BeginMessageMenuState: Display string is empty"));
+		UE_LOG(LogOnlineGame, Warning, TEXT("GameInstance::BeginMessageMenuState: Display string is empty"));
 		GotoInitialState();
 		return;
 	}
@@ -1177,7 +1177,7 @@ void UShooterGameInstance::EndPlayingState()
 void UShooterGameInstance::OnEndSessionComplete( FName SessionName, bool bWasSuccessful )
 {
 	UE_LOG(LogTemp, Warning, TEXT("GameInstance::OnEndSessionComplete()"));
-	UE_LOG(LogOnline, Log, TEXT("UShooterGameInstance::OnEndSessionComplete: Session=%s bWasSuccessful=%s"), *SessionName.ToString(), bWasSuccessful ? TEXT("true") : TEXT("false") );
+	UE_LOG(LogOnline, Log, TEXT("GameInstance::OnEndSessionComplete: Session=%s bWasSuccessful=%s"), *SessionName.ToString(), bWasSuccessful ? TEXT("true") : TEXT("false") );
 
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)

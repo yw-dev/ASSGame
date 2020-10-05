@@ -109,6 +109,12 @@ public:
 	/** Show Playerboard */
 	void ShowMapboard();
 
+	/** Show Teambar */
+	void ShowTeambar();
+
+	/** Show Targetbar */
+	void ShowTargetbar();
+
 	/** Show Playerboard */
 	void ShowPlayerDashboard();
 
@@ -150,13 +156,22 @@ public:
 	void ShowPurchaseFailureMessage(const FText& NewMessage, class UShooterItem* NewItem);
 
 	/**
-	 * Refresh Inventory.
+	 * Refresh Player Inventory UI.
 	 *
 	 * @param	KillerPlayerState	Player that did the killings state.
 	 * @param	VictimPlayerState	Played that was killed state.
 	 * @param	KillerDamageType	The type of damaged that caused the death.
 	 */
 	void RefreshInventoryWidget(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* VictimPlayerState, const UDamageType* KillerDamageType);
+
+	/**
+	 * Refresh Ability UI.
+	 *
+	 * @param	KillerPlayerState	Player that did the killings state.
+	 * @param	VictimPlayerState	Played that was killed state.
+	 * @param	KillerDamageType	The type of damaged that caused the death.
+	 */
+	void RefreshAbilityWidget(float InHealth, float InMaxHealth, float InRestoreHealth);
 
 	/** 
 	 * Add death message.
@@ -389,9 +404,14 @@ protected:
 	/** PlayerDashboard widget overlay. */
 	TSharedPtr<class SOverlay> PlayerboardOverlay;
 
-	//TSubclassOf<UShooterPlayerView> PlayerBoardWidgetClass;
-
+	UPROPERTY()
 	UShooterPlayerView* PlayerDashboard;
+
+	/** PlayerDashboard widget overlay. */
+	TSharedPtr<class SOverlay> TeambarOverlay;
+
+	UPROPERTY()
+	UShooterTeamBar* Teambar;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText CurrentMessage;

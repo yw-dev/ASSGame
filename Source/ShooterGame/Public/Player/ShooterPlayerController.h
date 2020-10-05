@@ -63,6 +63,10 @@ public:
 	UFUNCTION(reliable, client)
 	void ClientReceivePurchaseFailure(const FText& Message, class UShooterItem* NewItem);
 
+	/** Notifies clients to send the Purchase Failure message */
+	UFUNCTION(reliable, client)
+	void ClientReceivePlayerStateChangeEvent(float InHealth, float InMaxHealth, float InRestoreHealth);
+
 	/** used for input simulation from blueprint (for automatic perf tests) */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void SimulateInputKey(FKey Key, bool bPressed = true);
@@ -372,8 +376,8 @@ public:
 
 	/******************** PlayerDashboard View Event Delegate *********************/
 	/** Show the Player Dashboard if it's not already showing */
-	UFUNCTION(BlueprintCallable, Category = Inventory)
-	void ShowPlayerDashboard();
+	//UFUNCTION(BlueprintCallable, Category = Inventory)
+	//void ShowPlayerDashboard();
 
 	UFUNCTION()
 	void NotifyHPChanged(float InHealth, float InMaxHealth, float InRestoreHealth);
@@ -576,16 +580,16 @@ public:
 	UShooterItem* GetSlottedItem(FShooterItemSlot ItemSlot) const;
 
 	/** Returns PlayerDashboard widget. */
-	UFUNCTION(BlueprintPure, Category = "HUD|PlayerDashboard")
-	UShooterPlayerView* GetPlayerDashboard() const;
+	//UFUNCTION(BlueprintPure, Category = "HUD|PlayerDashboard")
+	//UShooterPlayerView* GetPlayerDashboard() const;
 
 	/** Gets the Buffer widget */
-	UFUNCTION(BlueprintCallable, Category = "HUD|PlayerTarget")
-	UShooterTargetPlayer* GetPlayerTarget() const;
+	//UFUNCTION(BlueprintCallable, Category = "HUD|PlayerTarget")
+	//UShooterTargetPlayer* GetPlayerTarget() const;
 
 	/** Gets the Buffer widget */
-	UFUNCTION(BlueprintCallable, Category = "HUD|TeamBar")
-	UShooterTeamBar* GetTeamBar() const;
+	//UFUNCTION(BlueprintCallable, Category = "HUD|TeamBar")
+	//UShooterTeamBar* GetTeamBar() const;
 
 	/** Fills in any empty slots with items in inventory */
 	UFUNCTION(BlueprintCallable, Category = Inventory)
@@ -678,39 +682,39 @@ protected:
 	uint8 bStoreVisible : 1;
 
 	/** PlayerDashboard widget overlay. */
-	TSharedPtr<class SOverlay> PlayerboardOverlay;
+	//TSharedPtr<class SOverlay> PlayerboardOverlay;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerDashboard")
-	TSubclassOf<UShooterPlayerView> PlayerBoardWidgetClass;
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerDashboard")
+	//TSubclassOf<UShooterPlayerView> PlayerBoardWidgetClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerDashboard")
-	UShooterPlayerView* PlayerDashboard;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerDashboard")
+	//UShooterPlayerView* PlayerDashboard;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerTarget")
-	TSubclassOf<UShooterTargetPlayer> PlayerTargetWidgetClass;
-
-	/** PlayerDashboard widget overlay. */
-	TSharedPtr<class SOverlay> PlayerTargetOverlay;
-
-	UPROPERTY()
-	UShooterTargetPlayer* PlayerTarget;
-
-	TSharedPtr<SWidget> TeamBarContainer;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerTeamBar")
-	TSubclassOf<UShooterTeamBar> TeamBarWidgetClass;
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerTarget")
+	//TSubclassOf<UShooterTargetPlayer> PlayerTargetWidgetClass;
 
 	/** PlayerDashboard widget overlay. */
-	TSharedPtr<class SOverlay> TeamBarOverlay;
+	//TSharedPtr<class SOverlay> PlayerTargetOverlay;
 
-	UPROPERTY()
-	UShooterTeamBar* TeamBar;
+	//UPROPERTY()
+	//UShooterTargetPlayer* PlayerTarget;
+
+	//TSharedPtr<SWidget> TeamBarContainer;
+
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerTeamBar")
+	//TSubclassOf<UShooterTeamBar> TeamBarWidgetClass;
+
+	/** PlayerDashboard widget overlay. */
+	//TSharedPtr<class SOverlay> TeamBarOverlay;
+
+	//UPROPERTY()
+	//UShooterTeamBar* TeamBar;
 
 	/** Show the Player Target if it's not already showing */
-	void ShowPlayerTarget();
+	//void ShowPlayerTarget();
 
 	/** Show the Player Target if it's not already showing */
-	void ShowTeamBar();
+	//void ShowTeamBar();
 
 	//获取需要操作数据的widget对象
 	void FindImageComponents();
