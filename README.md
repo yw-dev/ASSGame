@@ -7,10 +7,10 @@
 Engine版本：UE 4.20.3
 
 ##### 
-![Shotcut](https://github.com/yw-dev/ASSGame/Doc/Shotcut.png)
+![Shotcut](https://github.com/yw-dev/ASSGame/blob/master/Doc/Shotcut.png)
 
 ###  概述:
-![In Game](https://github.com/yw-dev/ASSGame/Doc/InGame.png)
+![In Game](https://github.com/yw-dev/ASSGame/blob/master/Doc/InGame.png)
 
 ###  UI内容:
 - **模拟大厅主菜单：** 
