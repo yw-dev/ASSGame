@@ -6,11 +6,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;示例实现基于Epic官方ShooterGame和ActionRPG两个学习项目融合扩展而成。旨在学习并掌握UE4引擎各模块基于C++的交互工作流程（玩法模式参考Dota2和英雄联盟）。
 Engine版本：UE 4.20.3
 
-#####  
-![Shotcut](/Doc/Shotcut.png)
+##### 
+![Shotcut](https://github.com/yw-dev/ASSGame/Doc/Shotcut.png)
 
 ###  概述:
-![In Game](/Doc/InGame.png)
+![In Game](https://github.com/yw-dev/ASSGame/Doc/InGame.png)
 
 ###  UI内容:
 - **模拟大厅主菜单：** 
