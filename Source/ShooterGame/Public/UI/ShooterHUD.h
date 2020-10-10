@@ -113,7 +113,7 @@ public:
 	void ShowTeambar();
 
 	/** Show Targetbar */
-	void ShowTargetbar();
+	void ShowTargetPlayer();
 
 	/** Show Playerboard */
 	void ShowPlayerDashboard();
@@ -407,12 +407,18 @@ protected:
 	UPROPERTY()
 	UShooterPlayerView* PlayerDashboard;
 
-	/** PlayerDashboard widget overlay. */
+	/** TargetPlayer widget overlay. */
+	TSharedPtr<class SOverlay> TargetOverlay;
+
+	UPROPERTY()
+	UShooterTargetPlayer* TargetPlayer;
+
+	/** Teambar widget overlay. */
 	TSharedPtr<class SOverlay> TeambarOverlay;
 
 	UPROPERTY()
 	UShooterTeamBar* Teambar;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText CurrentMessage;
 

@@ -57,6 +57,12 @@ AShooterHUD::AShooterHUD(const FObjectInitializer& ObjectInitializer) : Super(Ob
 	{
 		Teambar = CreateWidget<UShooterTeamBar>(GetWorld(), TeamBarWidgetClass.Class);
 	}
+	
+	static ConstructorHelpers::FClassFinder<UShooterTargetPlayer> TargetWidgetClass(TEXT("/Game/Blueprints/WidgetBP/Player/Player_Target"));
+	if (TargetWidgetClass.Class != NULL)
+	{
+		TargetPlayer = CreateWidget<UShooterTargetPlayer>(GetWorld(), TargetWidgetClass.Class);
+	}
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HitTextureOb(TEXT("/Game/UI/HUD/HitIndicator"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HUDMainTextureOb(TEXT("/Game/UI/HUD/HUDMain"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> HUDAssets02TextureOb(TEXT("/Game/UI/HUD/HUDAssets02"));
@@ -632,7 +638,7 @@ void AShooterHUD::DrawHUD()
 		}
 
 		DrawDeathMessages();
-		DrawCrosshair();
+		//DrawCrosshair();
 		DrawHitIndicator();
 
 		// Draw any recent killed player - cache the used Y coord for later when we draw the large onscreen messages.
@@ -659,7 +665,8 @@ void AShooterHUD::DrawHUD()
 
 	// Render the info messages such as wating to respawn - these will be drawn below any 'killed player' message.
 	ShowInfoItems(MessageOffset, 1.0f); 
-	//ShowMapboard();
+	ShowTargetPlayer();
+	ShowMapboard();
 
 }
 
@@ -1231,6 +1238,41 @@ bool AShooterHUD::ShowScoreboard(bool bEnable, bool bFocus)
 		}
 	}
 	return true;
+}
+
+void AShooterHUD::ShowTargetPlayer()
+{
+	UE_LOG(LogTemp, Warning, TEXT("HUD::ShowTargetPlayer()"));
+
+	AShooterPlayerController* ShooterPC = Cast<AShooterPlayerController>(PlayerOwner);
+	// If the game menu is visible dont show the chat menu
+	if ((ShooterPC == NULL) || ShooterPC->IsGameMenuVisible() || GetMatchState() == EShooterMatchState::Warmup || GetNetMode() == NM_Standalone)
+	{
+		return;
+	}
+	if (Teambar != nullptr)
+	{
+		Teambar->SetOwningPlayer(PlayerOwner);
+		//Teambar->InitWidget();
+
+		SAssignNew(TargetOverlay, SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Left)
+			.VAlign(EVerticalAlignment::VAlign_Center)
+			[
+				SNew(SBox)
+				.WidthOverride(200)
+				.HeightOverride(230)
+				.Padding(10)
+				[
+					TargetPlayer->TakeWidget()
+				]
+			];
+	}
+	if (TargetOverlay)
+	{
+		GEngine->GameViewport->AddViewportWidgetForPlayer(PlayerOwner->GetLocalPlayer(), TargetOverlay.ToSharedRef(), 1);
+	}
 }
 
 void AShooterHUD::ShowTeambar()

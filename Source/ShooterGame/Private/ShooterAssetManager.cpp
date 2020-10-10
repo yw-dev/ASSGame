@@ -10,7 +10,7 @@ const FPrimaryAssetType	UShooterAssetManager::SkillItemType = TEXT("Skill");
 const FPrimaryAssetType	UShooterAssetManager::TokenItemType = TEXT("Token");
 const FPrimaryAssetType	UShooterAssetManager::WeaponItemType = TEXT("Weapon");
 const FPrimaryAssetType	UShooterAssetManager::PawnItemType = TEXT("Pawn");
-const FPrimaryAssetType	UShooterAssetManager::ArmorItemType = TEXT("Armor"); 
+const FPrimaryAssetType	UShooterAssetManager::ArmorItemType = TEXT("Armor");
 
 
 UShooterAssetManager& UShooterAssetManager::Get()
