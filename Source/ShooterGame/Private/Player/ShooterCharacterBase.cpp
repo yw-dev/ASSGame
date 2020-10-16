@@ -141,6 +141,7 @@ void AShooterCharacterBase::RemoveStartupGameplayAbilities()
 void AShooterCharacterBase::OnInventoryItemChanged(UShooterItem* item, bool bAdded)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnInventoryItemChanged()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -155,7 +156,7 @@ void AShooterCharacterBase::OnInventoryItemChanged(UShooterItem* item, bool bAdd
 	default:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
-	}
+	}*/
 	RefreshSlottedGameplayAbilities();
 }
 
@@ -534,6 +535,7 @@ bool AShooterCharacterBase::SetCharacterLevel(int32 NewLevel)
 bool AShooterCharacterBase::ActivateAbilitiesWithItemSlot(FShooterItemSlot ItemSlot, bool bAllowRemoteActivation)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::ActivateAbilitiesWithItemSlot()"));
+	/*
 	switch (GetNetMode())
 	{
 	case ENetMode::NM_DedicatedServer:
@@ -564,7 +566,7 @@ bool AShooterCharacterBase::ActivateAbilitiesWithItemSlot(FShooterItemSlot ItemS
 	default:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
-	}
+	}*/
 	FGameplayAbilitySpecHandle* FoundHandle = SlottedAbilities.Find(ItemSlot);
 
 	if (FoundHandle && AbilitySystemComponent)

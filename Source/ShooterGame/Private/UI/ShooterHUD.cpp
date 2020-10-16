@@ -589,6 +589,9 @@ void AShooterHUD::DrawHUD()
 	if (GetNetMode() != NM_Standalone)
 	{
 		FString NetModeDesc = (GetNetMode() == NM_Client) ? TEXT("Client") : TEXT("Server");
+		UShooterGameInstance* const GI = Cast<UShooterGameInstance>(PlayerOwner->GetGameInstance());
+		AShooterGameSession* ShooterSession = GI->GetGameSession();
+
 		IOnlineSubsystem * OnlineSubsystem = IOnlineSubsystem::Get();
 		if(OnlineSubsystem)
 		{
@@ -598,7 +601,7 @@ void AShooterHUD::DrawHUD()
 				FNamedOnlineSession * Session = SessionSubsystem->GetNamedSession(NAME_GameSession);
 				if(Session)
 				{
-					NetModeDesc += TEXT("\nSession: ");
+					NetModeDesc += TEXT("\nSessionID: ");
 					NetModeDesc += Session->SessionInfo->GetSessionId().ToString();
 				}
 			}
@@ -665,7 +668,7 @@ void AShooterHUD::DrawHUD()
 
 	// Render the info messages such as wating to respawn - these will be drawn below any 'killed player' message.
 	ShowInfoItems(MessageOffset, 1.0f); 
-	ShowTargetPlayer();
+	//ShowTargetPlayer();
 	ShowMapboard();
 
 }
@@ -1352,15 +1355,23 @@ void AShooterHUD::ShowMapboard()
 	{
 		return;
 	}
+	//Viewport Size
+	const FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
+
 	SAssignNew(MapboardOverlay, SOverlay)
 	+ SOverlay::Slot()
 	.HAlign(EHorizontalAlignment::HAlign_Right)
 	.VAlign(EVerticalAlignment::VAlign_Bottom)
 	[
-		SAssignNew(MapboardWidget, SShooterMapWidget)
-		.Cursor(EMouseCursor::Default)
-		.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
-		.MatchState(GetMatchState())
+		SNew(SBox)
+		.HeightOverride(ViewportSize.Y / 4 + 50)
+		.WidthOverride(ViewportSize.X / 4)
+		[
+			SAssignNew(MapboardWidget, SShooterMapWidget)
+			.Cursor(EMouseCursor::Default)
+			.PlayerOwner(MakeWeakObjectPtr(PlayerOwner))
+			.MatchState(GetMatchState())
+		]
 	];
 
 	GEngine->GameViewport->AddViewportWidgetContent(

@@ -7,36 +7,45 @@
 Engine版本：UE 4.20.3
 
 ##### 
-![GamePreview](https://github.com/yw-dev/ASSGame/raw/master/Doc/Shotcut.png)
+![GamePreview](https://yw-dev.github.io/content/posts/2019-04-17/Shotcut.png)
 
 
 ###  概述:
-![InGame流程图](https://github.com/yw-dev/ASSGame/blob/master/Doc/InGame.png)
+![InGame流程图](https://yw-dev.github.io/content/posts/2019-04-17/InGame.png)
 
 ###  UI内容:
-- **模拟大厅主菜单：** 
-- **Player主界面：** 
-- **商店：** 
+
+&nbsp;&nbsp;&nbsp;&nbsp;UI的两种实现方式：使用Slate的实现方式：Slate / Style / UE4智能指针库实现(参考ShooterGame中UI菜单实现方式)。另一种使用UMG / C++事件驱动UI(Delegate/Event)方式实现。
+
+- **模拟大厅主菜单：** Slate/Style/HUD：角色模型级联菜单/session检索/退出。
+- **玩家主界面：** UMG/HUD/C++驱动UI：TeamBar/PlayerDashboard/角色目标.
+- **商店：** UMG/HUD/C++驱动UI：物品分类/物品一览/物品详情。
 - **Alert提示：** 
-- **计分板：** 
+- **计分板：**  Slate/Style/HUD：团队角色计分一览。
 - **小地图：** 
 
 ###  Gameplay内容:
-#####  道具:
+
+&nbsp;&nbsp;&nbsp;&nbsp;Gameplay作为UE4游戏核心应用层框架结合AssetManager/GameplayAbilitySystem(GAS)实现游戏流程控制、资源数据管理、玩家角色能力、能力数据、效果赋予与交互等内容。
+
+####  道具:
+
+&nbsp;&nbsp;&nbsp;&nbsp;游戏中各类道具Actor Items实现主要使用DataAsset/DataTable + AssetManager注册管理 + StreamableManager运行时加载。
+
 - **防具/武器：** 
 - **技能：** 
 - **Pickup：** 
 - **Pawn：** 
 
-#####  角色:
+####  角色与Ability:
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+
 - **角色：** 
-- **能力：** 
+- **Ability：** 
 
-#####  玩法:
+####  多人玩法:
 - **模式：** 
-
-#####  多人/网络:
-- **团队模式：** 
 
 ###  Asset/Data内容:
 - **DataAsset/DataTable(All Items)：** 

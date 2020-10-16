@@ -228,7 +228,7 @@ void AShooterPlayerController::SetPlayer( UPlayer* InPlayer )
 		ShooterIngameMenu->Construct(Cast<ULocalPlayer>(Player));
 		ShooterShopMenu = MakeShareable(new FShooterShopMenu());
 		ShooterShopMenu->Construct(Cast<ULocalPlayer>(Player));
-
+		
 		//ShowPlayerDashboard();
 		//ShowPlayerTarget();
 		//ShowTeamBar();
@@ -743,6 +743,8 @@ void AShooterPlayerController::ClientGameStarted_Implementation()
 	{
 		ShooterHUD->SetMatchState(EShooterMatchState::Playing);
 		ShooterHUD->ShowScoreboard(false);
+		//ShooterHUD->ShowPlayerDashboard();
+		//ShooterHUD->ShowTeambar();
 	}
 	bGameEndedFrame = false;
 
@@ -1102,6 +1104,7 @@ void AShooterPlayerController::SetCurrentPurchaseItem(UShooterItem* NewPurchaseI
 bool AShooterPlayerController::CanPurchaseItem(UShooterItem* Item)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::CanPurchaseItem()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1110,7 +1113,7 @@ bool AShooterPlayerController::CanPurchaseItem(UShooterItem* Item)
 	case ENetRole::ROLE_AutonomousProxy:
 		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
 		break;
-	}
+	}*/
 	if (IsSlotSpaceEnough(Item))
 	{
 		return true;
@@ -1121,6 +1124,7 @@ bool AShooterPlayerController::CanPurchaseItem(UShooterItem* Item)
 bool AShooterPlayerController::HasItem(UShooterItem* Item)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::CanPurchaseItem()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1129,7 +1133,7 @@ bool AShooterPlayerController::HasItem(UShooterItem* Item)
 	case ENetRole::ROLE_AutonomousProxy:
 		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
 		break;
-	}
+	}*/
 	const FShooterItemSlot* FoundItem = SlottedItems.FindKey(Item);
 
 	if (FoundItem)
@@ -1142,6 +1146,7 @@ bool AShooterPlayerController::HasItem(UShooterItem* Item)
 bool AShooterPlayerController::IsCoinsEnough(UShooterItem* Item)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::IsCoinsEnough()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1150,7 +1155,7 @@ bool AShooterPlayerController::IsCoinsEnough(UShooterItem* Item)
 	case ENetRole::ROLE_AutonomousProxy:
 		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
 		break;
-	}
+	}*/
 	if (Item->Price >= GetInventoryItemCount(SoulsItem))
 	{
 		return true;
@@ -1163,6 +1168,7 @@ bool AShooterPlayerController::IsCoinsEnough(UShooterItem* Item)
 bool AShooterPlayerController::IsSlotSpaceEnough(UShooterItem* Item)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::IsCoinsEnough()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1171,7 +1177,7 @@ bool AShooterPlayerController::IsSlotSpaceEnough(UShooterItem* Item)
 	case ENetRole::ROLE_AutonomousProxy:
 		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
 		break;
-	}
+	}*/
 	if (HasItem(Item) == false || IsPluralItems(Item) == true)
 	{
 		if (Item->ItemType == UShooterAssetManager::SkillItemType && AbilitySlot.Num() < PLAYER_ABILITY_SLOT_COUNT)
@@ -1198,6 +1204,7 @@ bool AShooterPlayerController::IsSlotSpaceEnough(UShooterItem* Item)
 bool AShooterPlayerController::IsPluralItems(UShooterItem* Item)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::IsPluralItems()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1206,7 +1213,7 @@ bool AShooterPlayerController::IsPluralItems(UShooterItem* Item)
 	case ENetRole::ROLE_AutonomousProxy:
 		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
 		break;
-	}
+	}*/
 	if (Item->ItemType == UShooterAssetManager::PotionItemType)
 	{
 		return true;
@@ -1217,6 +1224,7 @@ bool AShooterPlayerController::IsPluralItems(UShooterItem* Item)
 void AShooterPlayerController::PurchaseItem(UShooterItem* Item)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Controller::PurchaseItem()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1225,7 +1233,7 @@ void AShooterPlayerController::PurchaseItem(UShooterItem* Item)
 	case ENetRole::ROLE_AutonomousProxy:
 		UE_LOG(LogTemp, Warning, TEXT("On  ROLE_AutonomousProxy."));
 		break;
-	}
+	}*/
 	if (Item && IsInState(NAME_Playing))
 	{
 		if (HasAuthority())

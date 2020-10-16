@@ -195,12 +195,13 @@ void AShooterCharacter::PawnClientRestart()
 	//UMaterialInstanceDynamic* Mesh1PMID = Mesh1P->CreateAndSetMaterialInstanceDynamic(0);
 	UMaterialInstanceDynamic* Mesh1PMID = GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
 	UpdateTeamColors(Mesh1PMID);
-	AShooterPlayerController* PC = Cast<AShooterPlayerController>(GetController());
-	AShooterHUD* HUD = PC->GetShooterHUD();
-	if (HUD)
+
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	AShooterHUD* MyHUD = MyPC ? Cast<AShooterHUD>(MyPC->GetHUD()) : NULL;
+	if (MyHUD)
 	{
-		HUD->ShowPlayerDashboard();
-		HUD->ShowTeambar();
+		MyHUD->ShowPlayerDashboard();
+		MyHUD->ShowTeambar();
 	}
 	/*
 	if (PC)
@@ -940,6 +941,7 @@ void AShooterCharacter::SpawnPropsActors()
 void AShooterCharacter::SpawnInventoryActor(class UShooterItem* NewItem)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::SpawnInventoryActor()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -958,7 +960,7 @@ void AShooterCharacter::SpawnInventoryActor(class UShooterItem* NewItem)
 		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_None"));
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
-	}
+	}*/
 
 	FShooterItemSlot ItemSlot;
 	UShooterWeaponItem* WeaponItem = Cast<UShooterWeaponItem>(NewItem);
@@ -1014,6 +1016,7 @@ void AShooterCharacter::SpawnInventoryActor(class UShooterItem* NewItem)
 void AShooterCharacter::RemoveInventoryActor(UShooterItem* removeItem)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::RemoveInventoryActor()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1028,7 +1031,7 @@ void AShooterCharacter::RemoveInventoryActor(UShooterItem* removeItem)
 	default:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
-	}
+	}*/
 	//UShooterWeaponItem* WeaponItem = Cast<UShooterWeaponItem>(removeItem);
 	if (IsLocallyControlled())
 	{
@@ -1135,6 +1138,7 @@ void AShooterCharacter::DestroyInventory()
 void AShooterCharacter::AddWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::AddWeapon()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1149,7 +1153,7 @@ void AShooterCharacter::AddWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase*
 	default:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
-	}
+	}*/
 	if (Weapon)
 	{
 		Weapon->OnEnterInventory(this);
@@ -1165,6 +1169,7 @@ void AShooterCharacter::AddWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase*
 
 void AShooterCharacter::RemoveWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon)
 {
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1179,7 +1184,7 @@ void AShooterCharacter::RemoveWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBa
 	default:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
-	}
+	}*/
 	if (Weapon && ItemSlot.IsValid())
 	{
 		Weapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -1197,6 +1202,7 @@ void AShooterCharacter::RemoveWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBa
 void AShooterCharacter::EquipWeapon(AShooterWeaponBase* Weapon)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::EquipWeapon()"));
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1211,7 +1217,7 @@ void AShooterCharacter::EquipWeapon(AShooterWeaponBase* Weapon)
 	default:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
-	}
+	}*/
 	if (Weapon)
 	{
 		if (HasAuthority())
@@ -1297,7 +1303,7 @@ void AShooterCharacter::SetCurrentWeaponType(EShooterWeaponType ActiveType)
 void AShooterCharacter::SetCurrentWeapon(AShooterWeaponBase* NewWeapon, AShooterWeaponBase* LastWeapon)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::SetCurrentWeapon()"));
-
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1316,7 +1322,7 @@ void AShooterCharacter::SetCurrentWeapon(AShooterWeaponBase* NewWeapon, AShooter
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		UE_LOG(LogTemp, Warning, TEXT("SetCurrentPurchaseItem On  ROLE_None"));
 		break;
-	}
+	}*/
 	if (!NewWeapon)
 	{
 		return;
@@ -1495,6 +1501,7 @@ void AShooterCharacter::StartWeaponFire()
 	UE_LOG(LogTemp, Warning, TEXT("Character::StartWeaponFire()"));
 	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("StartWeaponFire()"));
 
+	/*
 	switch (GetNetMode())
 	{
 	case ENetMode::NM_DedicatedServer:
@@ -1510,7 +1517,6 @@ void AShooterCharacter::StartWeaponFire()
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  NM_Standalone"));
 		break;
 	}
-
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1519,7 +1525,7 @@ void AShooterCharacter::StartWeaponFire()
 	case ENetRole::ROLE_AutonomousProxy:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
 		break;
-	}
+	}*/
 	if (!HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Role < ROLE_Authority"));
@@ -1742,6 +1748,7 @@ void AShooterCharacter::JumpSectionForCombo()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::JumpSectionForCombo(%s)"), *FString::Printf(TEXT("bEnableComboPeriod = %s"), bEnableComboPeriod == true?TEXT("true"):TEXT("false")));
 
+	/*
 	switch (GetNetMode())
 	{
 	case ENetMode::NM_DedicatedServer:
@@ -1757,7 +1764,6 @@ void AShooterCharacter::JumpSectionForCombo()
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  NM_Standalone"));
 		break;
 	}
-
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
@@ -1766,7 +1772,7 @@ void AShooterCharacter::JumpSectionForCombo()
 	case ENetRole::ROLE_AutonomousProxy:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
 		break;
-	}
+	}*/
 	if (bEnableComboPeriod == true) {
 		//USkeletalMeshComponent* UseMesh = GetPawnMesh();
 		USkeletalMeshComponent* UseMesh = GetPawnMesh();
