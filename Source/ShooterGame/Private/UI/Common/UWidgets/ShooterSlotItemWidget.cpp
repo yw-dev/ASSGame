@@ -61,9 +61,9 @@ void UShooterSlotItemWidget::SynchronizeProperties()
 
 bool UShooterSlotItemWidget::Initialize()
 {
-	Super::Initialize();
+	return Super::Initialize();
 
-	return true;
+	//return true;
 }
 
 void UShooterSlotItemWidget::OnButtonClicked()

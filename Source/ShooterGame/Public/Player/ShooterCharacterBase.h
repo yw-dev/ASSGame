@@ -107,6 +107,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual bool SetCharacterLevel(int32 NewLevel);
 
+	virtual void SetHealth(float Health);
+	virtual void SetMana(float Mana);
+
+	// Client only
+	virtual void OnRep_PlayerState() override;
+
 	/** Called when slotted items change, bound to delegate on interface */
 	virtual void OnItemSlotChanged(FShooterItemSlot ItemSlot, UShooterItem* Item);
 
@@ -193,9 +199,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities)
 	TMap<FShooterItemSlot, TSubclassOf<UShooterGameplayAbility>> DefaultSlottedAbilities;
 
-	/** Passive gameplay effects applied on creation */
+	/** Passive gameplay effects applied on creation. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Abilities)
-	TArray<TSubclassOf<UGameplayEffect>> PassiveGameplayEffects;
+	TArray<TSubclassOf<class UGameplayEffect>> DefaultEffects;
+
+	// (默认属性) Default attributes for a character for initializing on spawn/respawn..
+	// This is an instant GE that overrides the values for attributes that get reset on spawn/respawn.
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Abilities)
+	TSubclassOf<class UGameplayEffect> DefaultAttributes;
 
 	/** The component used to handle ability system interactions */
 	UPROPERTY()
@@ -203,7 +214,7 @@ protected:
 
 	/** List of attributes modified by the ability system */
 	UPROPERTY()
-	UShooterAttributeSet* AttributeSet;
+	UShooterAttributeSet* AttributeSetBase;
 
 	/** Cached pointer to the inventory source for this character, can be null */
 	UPROPERTY()
@@ -252,7 +263,7 @@ protected:
 	 * @param DamageCauser The actual actor that did the damage, might be a weapon or projectile
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Game|Player")
-	void OnDamaged(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser);
+	void OnDamaged(float DamageAmount, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser);
 	//void OnDamaged_Implementation(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AController* EventInstigator, AActor* DamageCauser);
 
 	/**
@@ -263,7 +274,7 @@ protected:
 	 * @param EventTags The gameplay tags of the event that changed mana
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Game|Player")
-	void OnHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
+	void OnHealthChanged(float DeltaValue);
 	//void OnHealthChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags);
 
 	/**
@@ -273,7 +284,7 @@ protected:
 	 * @param EventTags The gameplay tags of the event that changed mana
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Game|Player")
-	void OnManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
+	void OnManaChanged(float DeltaValue);
 	//void OnManaChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags);
 
 	/**
@@ -283,8 +294,13 @@ protected:
 	 * @param EventTags The gameplay tags of the event that changed mana
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Game|Player")
-	void OnMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
+	void OnMoveSpeedChanged(float DeltaValue);
 	//void OnMoveSpeedChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags);
+
+	// Initialize the Character's attributes. Must run on Server but we run it on Client too
+	// so that we don't have to wait. The Server's replication to the Client won't matter since
+	// the values should be the same.
+	virtual void InitializeDefaultAttributes();
 
 	/** Apply the startup gameplay abilities and effects */
 	void AddStartupGameplayAbilities();
@@ -302,12 +318,12 @@ protected:
 	void RemoveSlottedGameplayAbilities(bool bRemoveAll);
 
 	// Called from ShooterAttributeSet, these call BP events above
-	virtual void HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser);
-	virtual void HandleHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
-	virtual void HandleManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
-	virtual void HandleMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags);
+	virtual void HandleDamage(float DamageAmount, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser);
+	virtual void HandleHealthChanged(float DeltaValue);
+	virtual void HandleManaChanged(float DeltaValue);
+	virtual void HandleMoveSpeedChanged(float DeltaValue);
 
 	// Friended to allow access to handle functions above
 	friend UShooterAttributeSet;
-	
+
 };

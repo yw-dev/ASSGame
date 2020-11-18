@@ -145,7 +145,7 @@ protected:
 	void DealDamage(const FHitResult& Impact, const FVector& ShootDir);
 
 	/** [local] weapon specific fire implementation */
-	virtual void FireWeapon() override;
+	virtual void FireWeapon();
 
 	/** [local + server] update spread on firing */
 	virtual void OnBurstFinished() override;

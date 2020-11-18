@@ -8,7 +8,8 @@
 
 // Sets default values
 UShooterAttributeSet::UShooterAttributeSet()
-	: Health(1.f)
+	: CharacterLevel(1)
+	, Health(1.f)
 	, MaxHealth(1.f)
 	, RestoreHealth(1.f)
 	, Mana(0.f)
@@ -20,6 +21,8 @@ UShooterAttributeSet::UShooterAttributeSet()
 	, DefensePower(1.0f)
 	, MoveSpeed(1.0f)
 	, Damage(0.0f)
+	, ProvideEXP(1.0f)
+	, MaxEXP(0.0f)
 {
 }
 
@@ -27,17 +30,25 @@ void UShooterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UShooterAttributeSet, Health);
-	DOREPLIFETIME(UShooterAttributeSet, MaxHealth);
-	DOREPLIFETIME(UShooterAttributeSet, RestoreHealth);
-	DOREPLIFETIME(UShooterAttributeSet, Mana);
-	DOREPLIFETIME(UShooterAttributeSet, MaxMana);
-	DOREPLIFETIME(UShooterAttributeSet, RestoreMana);
-	DOREPLIFETIME(UShooterAttributeSet, Coins);
-	DOREPLIFETIME(UShooterAttributeSet, DeathCooldown);
-	DOREPLIFETIME(UShooterAttributeSet, AttackPower);
-	DOREPLIFETIME(UShooterAttributeSet, DefensePower);
-	DOREPLIFETIME(UShooterAttributeSet, MoveSpeed);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, CharacterLevel, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, RestoreHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, RestoreMana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, Coins, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, DeathCooldown, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, DefensePower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, ProvideEXP, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UShooterAttributeSet, MaxEXP, COND_None, REPNOTIFY_Always);
+}
+
+void UShooterAttributeSet::OnRep_CharacterLevel()
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, CharacterLevel);
 }
 
 void UShooterAttributeSet::OnRep_Health()
@@ -95,6 +106,16 @@ void UShooterAttributeSet::OnRep_MoveSpeed()
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, MoveSpeed);
 }
 
+void UShooterAttributeSet::OnRep_ProvideEXP()
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, ProvideEXP);
+}
+
+void UShooterAttributeSet::OnRep_MaxEXP()
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UShooterAttributeSet, MaxEXP);
+}
+
 void UShooterAttributeSet::AdjustAttributeForMaxChange(FGameplayAttributeData& AffectedAttribute, const FGameplayAttributeData& MaxAttribute, float NewMaxValue, const FGameplayAttribute& AffectedAttributeProperty)
 {
 	UE_LOG(LogTemp, Warning, TEXT("AttributeSet::AdjustAttributeForMaxChange()"));
@@ -123,6 +144,11 @@ void UShooterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribut
 	else if (Attribute == GetMaxManaAttribute())
 	{
 		AdjustAttributeForMaxChange(Mana, MaxMana, NewValue, GetManaAttribute());
+	}
+	else if (Attribute == GetMoveSpeedAttribute())
+	{
+		// Cannot slow less than 150 units/s and cannot boost more than 1000 units/s
+		NewValue = FMath::Clamp<float>(NewValue, 150, 1000);
 	}
 }
 
@@ -203,28 +229,46 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 
 		if (LocalDamageDone > 0)
 		{
+			// If character was alive before damage is added, handle damage
+			// This prevents damage being added to dead things and replaying death animations
+			bool WasAlive = true;
+
+			if (TargetCharacter)
+			{
+				WasAlive = TargetCharacter->IsAlive();
+			}
+
+			if (!TargetCharacter->IsAlive())
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("%s() %s is NOT alive when receiving damage"), TEXT(__FUNCTION__), *TargetCharacter->GetName());
+			}
+
 			// Apply the health change and then clamp it
 			const float OldHealth = GetHealth();
 			SetHealth(FMath::Clamp(OldHealth - LocalDamageDone, 0.0f, GetMaxHealth()));
 
-			if (TargetCharacter)
+			if (TargetCharacter && WasAlive)
 			{
+				// Play HitReact animation and sound with a multicast RPC.
+				const FHitResult* Hit = Data.EffectSpec.GetContext().GetHitResult();
+
+				/*
 				FPointDamageEvent PointDmg;
 				PointDmg.DamageTypeClass = TSubclassOf<UDamageType>(UDamageType::StaticClass());
 				PointDmg.HitInfo = HitResult;
 				PointDmg.Damage = LocalDamageDone;
-
-				HitResult.GetActor()->TakeDamage(LocalDamageDone, PointDmg, SourceController, SourceActor);
+				*/
+				HitResult.GetActor()->TakeDamage(LocalDamageDone, FDamageEvent(UDamageType::StaticClass()), SourceController, SourceActor);
 				//TargetCharacter->HandleHealthChanged(-LocalDamageDone, SourceTags);
 				//FPointDamageEvent damageEvent;
 				//damageEvent.HitInfo = HitResult;
 				//TargetCharacter->TakeDamage(LocalDamageDone, damageEvent, SourceController, SourceActor);
 				// This is proper damage
-				TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter, SourceActor);
+				//TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter, SourceActor);
 				//TargetCharacter->HandleDamage(LocalDamageDone, HitResult, SourceTags, SourceCharacter->GetController(), SourceActor);
 
 				// Call for all health changes
-				TargetCharacter->HandleHealthChanged(-LocalDamageDone, SourceTags);
+				TargetCharacter->HandleHealthChanged(-LocalDamageDone);
 			}
 		}
 	}
@@ -237,7 +281,7 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 		if (TargetCharacter)
 		{
 			// Call for all health changes
-			TargetCharacter->HandleHealthChanged(DeltaValue, SourceTags);
+			TargetCharacter->HandleHealthChanged(DeltaValue);
 		}
 	}
 	else if (Data.EvaluatedData.Attribute == GetManaAttribute())
@@ -248,7 +292,7 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 		if (TargetCharacter)
 		{
 			// Call for all mana changes
-			TargetCharacter->HandleManaChanged(DeltaValue, SourceTags);
+			TargetCharacter->HandleManaChanged(DeltaValue);
 		}
 	}
 	else if (Data.EvaluatedData.Attribute == GetMoveSpeedAttribute())
@@ -256,7 +300,7 @@ void UShooterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 		if (TargetCharacter)
 		{
 			// Call for all movespeed changes
-			TargetCharacter->HandleMoveSpeedChanged(DeltaValue, SourceTags);
+			TargetCharacter->HandleMoveSpeedChanged(DeltaValue);
 		}
 	}
 }

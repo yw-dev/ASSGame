@@ -8,7 +8,7 @@
 
 /**
  *  Anim Montage  Section dispatcher Notify
- *  角色动画片段跳转通知（技能连击动画）
+ *  角色动画片段跳转通知（技能连击动画通知）
  */
 UCLASS(editinlinenew, Blueprintable, const, hidecategories = Object, collapsecategories, meta = (ShowWorldContextPin, DisplayName = "ShooterJumpSection"))
 class SHOOTERGAME_API UAnimNotifyState_JumpSection : public UAnimNotifyState

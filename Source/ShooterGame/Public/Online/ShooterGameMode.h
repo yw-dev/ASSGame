@@ -87,6 +87,9 @@ protected:
 	UPROPERTY(config)
 	int32 TimeBetweenMatches;
 
+	UPROPERTY(config)
+	int32 RespawnDelay;
+
 	/** score for kill */
 	UPROPERTY(config)
 	int32 KillScore;

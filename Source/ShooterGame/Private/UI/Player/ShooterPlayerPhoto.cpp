@@ -27,9 +27,29 @@ void UShooterPlayerPhoto::SynchronizeProperties()
 	Super::SynchronizeProperties();
 }
 
+void UShooterPlayerPhoto::UpdatePlayerPhoto(bool IsAlive, FText InDelay, FText InLevel) const
+{
+	if (IsAlive)
+	{
+		DieCooldownPanel->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else
+	{
+		DieCooldownPanel->SetVisibility(ESlateVisibility::Visible);
+		SetDieCooldownLabel(InDelay);
+	}
+	SetLevelLabel(InLevel);
+}
 
+void UShooterPlayerPhoto::SetDieCooldownLabel(FText InDelay) const
+{
+	DieCooldownLabel->SetText(InDelay);
+}
 
-
+void UShooterPlayerPhoto::SetLevelLabel(FText InLevel) const
+{
+	LevelLabel->SetText(InLevel);
+}
 /////////////////////////////////////////////////////
 
 #undef LOCTEXT_NAMESPACE

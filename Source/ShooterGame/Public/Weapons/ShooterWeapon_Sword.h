@@ -95,6 +95,9 @@ class SHOOTERGAME_API AShooterWeapon_Sword : public AShooterMeleeWeapon
 
 	AShooterWeapon_Sword(const FObjectInitializer& ObjectInitializer);
 
+	/** get current spread */
+	float GetCurrentSpread() const;
+
 protected:
 
 	/** initial setup */
@@ -118,8 +121,18 @@ protected:
 
 	float AttackDelayTime;
 
-	/** [local] weapon specific fire implementation */
-	virtual void FireWeapon() override;
+	/** current spread from continuous firing */
+	float CurrentFiringSpread;
+
+	/** [local] weapon Melee physic attack specific fire implementation */
+	virtual void WeaponHit(const FHitResult& Impact, const FVector& Origin, const FVector& HitDir, int32 RandomSeed, float ReticleSpread) override;
+
+	/** [local] weapon long distance attack specific fire implementation */
+	virtual void WeaponDistanceHit() override;
+
+	/** [local + server] update spread on firing */
+	virtual void OnBurstFinished() override;
+
 
 public:
 
@@ -131,12 +144,20 @@ public:
 	UFUNCTION(reliable, server, WithValidation)
 	void ServerFireEnd();
 
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
-	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Weapon usage
+
+	/** server notified of hit from client to verify */
+	UFUNCTION(reliable, server, WithValidation)
+	void ServerNotifyHit(const FHitResult& Impact, FVector_NetQuantizeNormal Origin, FVector_NetQuantizeNormal HitDir, int32 RandomSeed, float ReticleSpread);
+
+	/** server notified of miss to show trail FX */
+	UFUNCTION(unreliable, server, WithValidation)
+	void ServerNotifyMiss(FVector_NetQuantizeNormal ShootDir, int32 RandomSeed, float ReticleSpread);
 
 	/** [local] weapon specific fire implementation */
 	//virtual void FireWeapon() override;
@@ -145,6 +166,18 @@ public:
 
 	//UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
 	//void EndWeaponAttack() override;
+
+	/** process the instant hit and notify the server if necessary */
+	void ProcessHit(const FHitResult& Impact, const FVector& Origin, const FVector& ShootDir, int32 RandomSeed, float ReticleSpread);
+
+	/** continue processing the instant hit, as if it has been confirmed by the server */
+	void ProcessHit_Confirmed(const FHitResult& Impact, const FVector& Origin, const FVector& ShootDir, int32 RandomSeed, float ReticleSpread);
+
+	/** check if weapon should deal damage to actor */
+	bool ShouldDealDamage(AActor* TestActor) const;
+
+	/** handle damage */
+	void DealDamage(const FHitResult& Impact, const FVector& ShootDir);
 
 
 	UFUNCTION()

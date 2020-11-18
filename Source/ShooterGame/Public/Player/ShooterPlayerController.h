@@ -321,6 +321,8 @@ public:
 	/** respawn after dying */
 	virtual void UnFreeze() override;
 
+	//virtual float GetMinRespawnDelay() override;
+
 	/** sets up input */
 	virtual void SetupInputComponent() override;
 

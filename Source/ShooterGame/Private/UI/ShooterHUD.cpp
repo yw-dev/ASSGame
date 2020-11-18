@@ -363,7 +363,9 @@ void AShooterHUD::DrawWeaponHUD()
 
 void AShooterHUD::DrawHealth()
 {
-	AShooterCharacter* MyPawn = Cast<AShooterCharacter>(GetOwningPawn());
+	//AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(PlayerOwner);
+	AShooterPlayerState* MyPlayerState = PlayerOwner ? Cast<AShooterPlayerState>(PlayerOwner->PlayerState) : NULL;
+	AShooterCharacter* MyPawn = Cast<AShooterCharacter>(PlayerOwner->GetPawn());
 	Canvas->SetDrawColor(FColor::White);
 	const float HealthPosX = (Canvas->ClipX - HealthBarBg.UL * ScaleUI) / 2;
 	const float HealthPosY = Canvas->ClipY - (Offset + HealthBarBg.VL) * ScaleUI;
@@ -376,7 +378,9 @@ void AShooterHUD::DrawHealth()
 	TileItem.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(TileItem);
 
-	Canvas->DrawIcon(HealthIcon,HealthPosX + Offset * ScaleUI, HealthPosY + (HealthBar.VL - HealthIcon.VL) / 2.0f * ScaleUI, ScaleUI);
+	UE_LOG(LogTemp, Warning, TEXT("AShooterHUD::DrawHealth( Pawn.CurrentHealth = %d, PS.CurrentHealth = %d)"), MyPawn->GetHealth(), MyPlayerState->GetHealth());
+
+	Canvas->DrawIcon(HealthIcon,HealthPosX + Offset * ScaleUI, HealthPosY + (HealthBar.VL - HealthIcon.VL) / 1.0f * ScaleUI, ScaleUI);
 }
 
 void AShooterHUD::DrawMatchTimerAndPosition()
@@ -612,7 +616,7 @@ void AShooterHUD::DrawHUD()
 		DrawDebugInfoString(NetModeDesc, Canvas->OrgX + Offset*ScaleUI, Canvas->OrgY + 5*Offset*ScaleUI, true, true, HUDLight);
 	}
 
-	//DrawMatchTimerAndPosition();
+	DrawMatchTimerAndPosition();
 
 	float MessageOffset = (Canvas->ClipY / 4.0)* ScaleUI;
 	if (MatchState == EShooterMatchState::Playing)
@@ -630,7 +634,7 @@ void AShooterHUD::DrawHUD()
 		else
 		{
 			// respawn
-			FString Text = LOCTEXT("WaitingForRespawn", "WAITING FOR RESPAWN").ToString();
+			FString Text = LOCTEXT("WaitingForRespawn", "WAIT FOR RESPAWN").ToString() + FString::FromInt(MyPC->GetMinRespawnDelay());
 			FCanvasTextItem TextItem( FVector2D::ZeroVector, FText::GetEmpty(), BigFont, HUDDark );
 			TextItem.EnableShadow( FLinearColor::Black );
 			TextItem.Text = FText::FromString( Text );
@@ -639,7 +643,7 @@ void AShooterHUD::DrawHUD()
 			TextItem.SetColor(HUDLight);
 			AddMatchInfoString(TextItem);
 		}
-
+		RefreshAbilityWidget(0.f, 0.f, 0.f);
 		DrawDeathMessages();
 		//DrawCrosshair();
 		DrawHitIndicator();
@@ -648,7 +652,7 @@ void AShooterHUD::DrawHUD()
 		MessageOffset = DrawRecentlyKilledPlayer();
 
 		// No ammo message if required
-		const float CurrentTime = GetWorld()->GetTimeSeconds();
+		/*const float CurrentTime = GetWorld()->GetTimeSeconds();
 		if (CurrentTime - NoAmmoNotifyTime >= 0 && CurrentTime - NoAmmoNotifyTime <= NoAmmoFadeOutTime)
 		{
 			FString Text = FString();
@@ -663,13 +667,13 @@ void AShooterHUD::DrawHUD()
 			TextItem.FontRenderInfo = ShadowedFont;
 			TextItem.SetColor(FLinearColor(0.75f, 0.125f, 0.125f, Alpha ));
 			AddMatchInfoString(TextItem);			
-		}
+		}*/
 	}
 
 	// Render the info messages such as wating to respawn - these will be drawn below any 'killed player' message.
 	ShowInfoItems(MessageOffset, 1.0f); 
 	//ShowTargetPlayer();
-	ShowMapboard();
+	//ShowMapboard();
 
 }
 
@@ -998,7 +1002,18 @@ void AShooterHUD::RefreshInventoryWidget(class AShooterPlayerState* KillerPlayer
 
 void AShooterHUD::RefreshAbilityWidget(float InHealth, float InMaxHealth, float InRestoreHealth)
 {
-	PlayerDashboard->GetAbilityWidget()->UpdateHPWidget(InHealth, InMaxHealth, InRestoreHealth);
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(PlayerOwner);
+	if (MyPC && PlayerDashboard)
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("HUD::RespawnDelay=%d"), MyPC->GetMinRespawnDelay()));
+		AShooterPlayerState* MyPlayerState = Cast<AShooterPlayerState>(MyPC->PlayerState);
+		if (MyPlayerState)
+		{
+			PlayerDashboard->GetAbilityWidget()->UpdateHPWidget(MyPlayerState->GetHealth(), MyPlayerState->GetMaxHealth(), MyPlayerState->GetRestoreHealth());
+			PlayerDashboard->GetAbilityWidget()->UpdateMPWidget(MyPlayerState->GetMana(), MyPlayerState->GetMaxMana(), MyPlayerState->GetRestoreMana());
+			PlayerDashboard->GetPhotoWidget()->UpdatePlayerPhoto(MyPlayerState->GetHealth() > 0, FText::AsNumber(MyPC->GetMinRespawnDelay()), FText::AsNumber(MyPlayerState->GetCharacterLevel()));
+		}
+	}
 }
 
 void AShooterHUD::ShowDeathMessage(class AShooterPlayerState* KillerPlayerState, class AShooterPlayerState* VictimPlayerState, const UDamageType* KillerDamageType)

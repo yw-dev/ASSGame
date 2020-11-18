@@ -384,8 +384,11 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Weapon usage
 
-	/** [local] weapon specific fire implementation */
-	virtual void FireWeapon() PURE_VIRTUAL(AShooterRangedWeapon::FireWeapon, );
+	/** [local] weapon Melee physic attack specific fire implementation */
+	virtual void WeaponHit(const FHitResult& Impact, const FVector& Origin, const FVector& HitDir, int32 RandomSeed, float ReticleSpread) override;
+
+	/** [local] weapon long distance attack specific fire implementation */
+	virtual void WeaponDistanceHit() override;
 
 	/** [server] fire & update ammo */
 	UFUNCTION(reliable, server, WithValidation)

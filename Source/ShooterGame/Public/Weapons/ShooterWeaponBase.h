@@ -124,10 +124,6 @@ class AShooterWeaponBase : public AActor
 
 protected:
 
-	/** pawn owner */
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_MyPawn)
-	class AShooterCharacter* MyPawn;
-
 	/** current weapon state */
 	EWeaponState::Type CurrentState;
 
@@ -168,11 +164,14 @@ private:
 	//UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	//USkeletalMeshComponent* Mesh1P;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = Root)
+	USphereComponent* Root;
+
 	/** weapon mesh: 3rd person view */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* Mesh3P;
 
-	UPROPERTY(VisibleDefaultsOnly, Category = Collision)
+	UPROPERTY(VisibleAnywhere, Category = Collision)
 	UCapsuleComponent* CapsuleCollision;
 
 
@@ -182,16 +181,16 @@ protected:
 	/** Returns Mesh3P subobject **/
 	FORCEINLINE USkeletalMeshComponent* GetMesh3P() const { return Mesh3P; }
 	/** Returns Mesh3P subobject **/
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UCapsuleComponent* GetCapsuleCollision() const { return CapsuleCollision; }
+	UFUNCTION(BlueprintCallable, Category = "CapsuleCollision")
+	FORCEINLINE UCapsuleComponent* GetCapsuleComp() const { return CapsuleCollision; }
+
+	/** pawn owner */
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_MyPawn)
+	class AShooterCharacter* MyPawn;
 
 	/** Handle for efficient management of OnEquipFinished timer */
 	FTimerHandle TimerHandle_OnEquipFinished;
 
-
-	//////////////////////////////////////////////////////////////////////////
-	// Common  Assets
-	
 	
 public:
 	// Sets default values for this actor's properties
@@ -208,18 +207,30 @@ public:
 
 	virtual void Destroyed() override;
 
+	//////////////////////////////////////////////////////////////////////////
+	// Weapon usage helpers
+
+	/** find hit */
+	FHitResult WeaponTraceSingle(const FVector& TraceFrom, const FVector& TraceTo) const;
+	TArray<struct FHitResult> WeaponTraceMulti(const FVector& TraceFrom, const FVector& TraceTo) const;
+
+
+
+	//////////////////////////////////////////////////////////////////////////
+	// Common  Assets
+
 	/**
 	 *	Event when this actor overlaps another actor, for example a player walking into a trigger.
 	 *	For events when objects have a blocking collision, for example a player hitting a wall, see 'Hit' events.
 	 *	@note Components on both this and the other Actor must have bGenerateOverlapEvents set to true to generate overlap events.
 	 */
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
 	/**
 	 *	Event when an actor no longer overlaps another actor, and they have separated.
 	 *	@note Components on both this and the other Actor must have bGenerateOverlapEvents set to true to generate overlap events.
 	 */
-	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
 	/** set the weapon's owning pawn */
 	void SetOwningPawn(AShooterCharacter* AShooterCharacter);
@@ -420,8 +431,11 @@ public:
 	/** [local + server] firing finished */
 	virtual void OnBurstFinished();
 
-	/** [local] weapon specific fire implementation */
-	virtual void FireWeapon() PURE_VIRTUAL(AShooterWeaponBase::FireWeapon, );
+	/** [local] weapon Melee physic attack specific fire implementation */
+	virtual void WeaponHit(const FHitResult& Impact, const FVector& Origin, const FVector& HitDir, int32 RandomSeed, float ReticleSpread) PURE_VIRTUAL(AShooterWeaponBase::WeaponHit, );
+
+	/** [local] weapon long distance attack specific fire implementation */
+	virtual void WeaponDistanceHit() PURE_VIRTUAL(AShooterWeaponBase::WeaponDistanceHit, );
 
 
 	//////////////////////////////////////////////////////////////////////////

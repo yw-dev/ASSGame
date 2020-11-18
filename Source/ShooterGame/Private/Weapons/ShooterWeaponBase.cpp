@@ -7,29 +7,39 @@
 // Sets default values
 AShooterWeaponBase::AShooterWeaponBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+	Root = ObjectInitializer.CreateDefaultSubobject<USphereComponent>(this, TEXT("Root"));
+	Root->SetSphereRadius(4.0f);
+	Root->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Root->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SetRootComponent(Root);
+
 	Mesh3P = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("WeaponMesh3P"));
 	Mesh3P->MeshComponentUpdateFlag = EMeshComponentUpdateFlag::OnlyTickPoseWhenRendered;
 	Mesh3P->bReceivesDecals = false;
 	Mesh3P->CastShadow = true;
-	//Mesh3P->SetCollisionObjectType(ECC_WorldDynamic);
+	Mesh3P->SetCollisionObjectType(ECC_WorldDynamic);
 	Mesh3P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
-	Mesh3P->SetupAttachment(GetRootComponent());
-
+	Mesh3P->SetupAttachment(Root);
+	
 	CapsuleCollision = ObjectInitializer.CreateDefaultSubobject<UCapsuleComponent>(this, TEXT("CapsuleCollision"));
-	CapsuleCollision->SetCapsuleHalfHeight(64.f);
-	CapsuleCollision->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-	CapsuleCollision->SetCollisionObjectType(ECC_Pawn);
+	CapsuleCollision->SetCapsuleHalfHeight(50.f);
+	CapsuleCollision->SetCapsuleRadius(5.f);
+	CapsuleCollision->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	//CapsuleCollision->SetCollisionObjectType(ECC_Pawn);
+	//CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	//CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Overlap);
+	CapsuleCollision->AlwaysLoadOnClient = true;
+	CapsuleCollision->AlwaysLoadOnServer = true;
+	CapsuleCollision->bTraceComplexOnMove = true;
 	CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	//CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
-	//CapsuleCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-	//CapsuleCollision->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_TC_WEAPON, ECR_Block);
-	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_PROJECTILE, ECR_Ignore);
-	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_WEAPON, ECR_Overlap);
-	//CapsuleCollision->SetCollisionResponseToChannel(COLLISION_OC_MARGIC, ECR_Ignore);
-	CapsuleCollision->SetupAttachment(GetRootComponent());
-
+	CapsuleCollision->SetCollisionObjectType(ECC_Pawn);
+	CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	CapsuleCollision->SetupAttachment(Root);
+	
 	LastFireTime = 0.0f;
 
 	AttackDelayCount = 0;
@@ -60,7 +70,7 @@ void AShooterWeaponBase::BeginPlay()
 void AShooterWeaponBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	GetCapsuleCollision()->IgnoreActorWhenMoving(this, true);
+	//GetCapsuleCollision()->IgnoreActorWhenMoving(this, true);
 }
 
 void AShooterWeaponBase::Destroyed()
@@ -76,7 +86,7 @@ void AShooterWeaponBase::Tick(float DeltaTime)
 
 //////////////////////////////////////////////////////////////////////////
 // Weapon Overlaped
-
+/*
 void AShooterWeaponBase::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	UE_LOG(LogTemp, Warning, TEXT("WeaponBase::NotifyActorBeginOverlap()"));
@@ -96,7 +106,7 @@ void AShooterWeaponBase::NotifyActorBeginOverlap(AActor* OtherActor)
 void AShooterWeaponBase::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////////
 // Player Input
@@ -139,14 +149,14 @@ void AShooterWeaponBase::BeginWeaponAttack_Implementation(FGameplayTag EventTag,
 	AttackDelayCount = InAttackDelayCount;
 	AttackDelayTime = InAttackDelayTime;
 	bIsAttacking = true;
-	GetCapsuleCollision()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	//GetCapsuleCollision()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
 void AShooterWeaponBase::EndWeaponAttack_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("WeaponBase::EndWeaponAttack()"));
 	bIsAttacking = false;
-	GetCapsuleCollision()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//GetCapsuleCollision()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 
@@ -221,6 +231,37 @@ bool AShooterWeaponBase::GetIsAttacking() const
 	return bIsAttacking;
 }
 
+TArray<struct FHitResult> AShooterWeaponBase::WeaponTraceMulti(const FVector& StartTrace, const FVector& EndTrace) const
+{
+
+	// Perform trace to retrieve hit info
+	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(WeaponTraceMulti), true, Instigator);
+	TraceParams.bTraceAsyncScene = true;
+	TraceParams.bReturnPhysicalMaterial = true;
+
+	TArray<struct FHitResult> OutHits;
+	//FHitResult OutHit(ForceInit);
+	//UKismetSystemLibrary::CapsuleTraceMulti(GetWorld(), LastLocation2, Weapon->GetSocketLocation("Trace2"), FVector(5, 30, 50), Weapon->GetComponentRotation(), ETraceTypeQuery::TraceTypeQuery4, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, HitResult, true);
+	GetWorld()->SweepMultiByChannel(OutHits, StartTrace, EndTrace, FQuat::Identity, COLLISION_OC_MELEE, FCollisionShape::MakeCapsule(5.f, 40.f), TraceParams);
+	
+	//GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, COLLISION_OC_MELEE, TraceParams);
+	return OutHits;
+}
+
+FHitResult AShooterWeaponBase::WeaponTraceSingle(const FVector& StartTrace, const FVector& EndTrace) const
+{
+
+	// Perform trace to retrieve hit info
+	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(WeaponTraceSingle), true, Instigator);
+	TraceParams.bTraceAsyncScene = true;
+	TraceParams.bReturnPhysicalMaterial = true;
+
+	FHitResult Hit(ForceInit);
+	GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, COLLISION_OC_MELEE, TraceParams);
+
+	return Hit;
+}
+
 void AShooterWeaponBase::SetOwningPawn(AShooterCharacter* NewOwner)
 {
 	UE_LOG(LogTemp, Warning, TEXT("WeaponBase::SetOwningPawn()"));
@@ -257,6 +298,10 @@ void AShooterWeaponBase::OnRep_MyPawn()
 	if (MyPawn)
 	{
 		OnEnterInventory(MyPawn);
+		if (MyPawn->IsLocallyControlled())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MyPawn->IsLocallyControlled()"));
+		}
 	}
 	else
 	{
@@ -293,10 +338,10 @@ void AShooterWeaponBase::OnLeaveInventory()
 		SetOwningPawn(NULL);
 	}
 
-	//if (IsAttachedToPawn())
-	//{
-	//	OnUnEquip();
-	//}
+	if (IsAttachedToPawn())
+	{
+		OnUnEquip();
+	}
 }
 
 

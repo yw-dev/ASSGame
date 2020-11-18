@@ -921,7 +921,7 @@ USkeletalMeshComponent* AShooterWeapon::GetWeaponMesh() const
 
 UCapsuleComponent* AShooterWeapon::GetWeaponCollision() const
 {
-	return GetCapsuleCollision();
+	return GetCapsuleComp();
 }
 
 /*

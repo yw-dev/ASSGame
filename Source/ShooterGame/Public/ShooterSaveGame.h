@@ -42,7 +42,7 @@ public:
 		SavedDataVersion = EShooterSaveGameVersion::LatestVersion;
 	}
 	
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, Category = SaveGame)
 	TArray<FShooterGameAsset> AssetSources;
 
 	/** Map of items to item data */

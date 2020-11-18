@@ -47,22 +47,23 @@ void UShooterPlayerAbility::InitWidget()
 {
 	UE_LOG(LogTemp, Warning, TEXT("UShooterPlayerAbility::InitWidget()"));
 
-	AShooterPlayerController* PC = Cast<AShooterPlayerController>(GetOwningPlayer());
-	AShooterCharacter* Pawn = Cast<AShooterCharacter>(PC->GetPawn());
-	if (Pawn)
+	//AShooterPlayerController* PC = Cast<AShooterPlayerController>(GetOwningPlayer());
+	AShooterPlayerState* PS = GetOwningPlayer() ? Cast<AShooterPlayerState>(GetOwningPlayer()->PlayerState) : NULL;
+	//AShooterCharacter* Pawn = Cast<AShooterCharacter>(PC->GetPawn());
+	if (PS)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UShooterPlayerAbility::InitWidget( Health = %d, MaxHealth = %d)"), Pawn->GetHealth(), Pawn->GetMaxHealth());
+		UE_LOG(LogTemp, Warning, TEXT("UShooterPlayerAbility::InitWidget( Health = %d, MaxHealth = %d)"), PS->GetHealth(), PS->GetMaxHealth());
 
 		// Health
-		SetHealthPercent(Pawn->GetHealth() / Pawn->GetMaxHealth());
-		SetCurrentHealth(FText::FromString(FString::FromInt(Pawn->GetHealth())));
-		SetMaxHealth(FText::FromString(FString::FromInt(Pawn->GetMaxHealth())));
-		SetRestoreHealth(FText::FromString(FString::SanitizeFloat(Pawn->GetRestoreHealth())));
+		SetHealthPercent(PS->GetHealth() / PS->GetMaxHealth());
+		SetCurrentHealth(FText::FromString(FString::FromInt(PS->GetHealth())));
+		SetMaxHealth(FText::FromString(FString::FromInt(PS->GetMaxHealth())));
+		SetRestoreHealth(FText::FromString(FString::SanitizeFloat(PS->GetRestoreHealth())));
 		// Mana
-		SetManaPercent(Pawn->GetMana() / Pawn->GetMaxMana());
-		SetCurrentMana(FText::FromString(FString::FromInt(Pawn->GetMana())));
-		SetMaxMana(FText::FromString(FString::FromInt(Pawn->GetMaxMana())));
-		SetRestoreMana(FText::FromString(FString::SanitizeFloat(Pawn->GetRestoreMana())));
+		SetManaPercent(PS->GetMana() / PS->GetMaxMana());
+		SetCurrentMana(FText::FromString(FString::FromInt(PS->GetMana())));
+		SetMaxMana(FText::FromString(FString::FromInt(PS->GetMaxMana())));
+		SetRestoreMana(FText::FromString(FString::SanitizeFloat(PS->GetRestoreMana())));
 		if (SkillSlot1)
 		{
 			SkillSlot1->SetSlotIndex(1);

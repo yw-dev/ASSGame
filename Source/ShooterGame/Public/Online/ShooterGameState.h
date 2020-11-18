@@ -31,7 +31,8 @@ public:
 	bool bTimerPaused;
 
 	/** gets ranked PlayerState map for specific team */
-	void GetRankedMap(int32 TeamIndex, RankedPlayerMap& OutRankedMap) const;	
+	void GetRankedMap(int32 TeamIndex, RankedPlayerMap& OutRankedMap) const;
+	virtual float GetPlayerRespawnDelay(class AController* Controller) const override;
 
 	void RequestFinishAndExitToMainMenu();
 };

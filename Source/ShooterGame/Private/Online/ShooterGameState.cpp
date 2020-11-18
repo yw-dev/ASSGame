@@ -21,6 +21,20 @@ void AShooterGameState::GetLifetimeReplicatedProps( TArray< FLifetimeProperty > 
 	DOREPLIFETIME( AShooterGameState, TeamScores );
 }
 
+float AShooterGameState::GetPlayerRespawnDelay(class AController* Controller) const
+{
+	const AGameMode* GameMode = GetDefaultGameMode<AGameMode>();
+	AShooterPlayerState* PS = Controller ? Cast<AShooterPlayerState>(Controller->PlayerState) : NULL;
+	if (GameMode && PS)
+	{
+		float delay = GameMode->MinRespawnDelay*(PS->GetDeaths() + 1);
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("GameState::MinRespawnDelay=%d, Deaths = %d, RespawnDelay = %f"), GameMode->MinRespawnDelay, PS->GetDeaths(), delay));
+		return delay;
+	}
+
+	return Super::GetPlayerRespawnDelay(Controller);
+}
+
 void AShooterGameState::GetRankedMap(int32 TeamIndex, RankedPlayerMap& OutRankedMap) const
 {
 	OutRankedMap.Empty();

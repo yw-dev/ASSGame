@@ -641,7 +641,6 @@ bool UShooterGameInstance::LoadFrontEndMap(const FString& MapName)
 
 AShooterGameSession* UShooterGameInstance::GetGameSession() const
 {
-	UE_LOG(LogTemp, Warning, TEXT("GameInstance::GetGameSession()"));
 	UE_LOG(LogOnline, Log, TEXT("GameInstance::GetGameSession"));
 	UWorld* const World = GetWorld();
 	if (World)
@@ -2702,8 +2701,8 @@ void UShooterGameInstance::AddDataSource(UShooterSaveGame* SaveGame, bool bRemov
 	// If we want to remove extra, clear out the existing inventory
 	if (bRemoveExtra)
 	{
-		SaveGame->AssetDataSource.Reset();
 		SaveGame->AssetSources.Reset();
+		SaveGame->AssetDataSource.Reset();
 	}
 
 	// Now add the default inventory, this only adds if not already in hte inventory
@@ -2716,7 +2715,10 @@ void UShooterGameInstance::AddDataSource(UShooterSaveGame* SaveGame, bool bRemov
 	}
 	for (auto Temp : AssetSources)
 	{
-		SaveGame->AssetSources.AddUnique(Temp);
+		if (!SaveGame->AssetSources.Contains(Temp))
+		{
+			SaveGame->AssetSources.Add(Temp);
+		}
 	}
 }
 

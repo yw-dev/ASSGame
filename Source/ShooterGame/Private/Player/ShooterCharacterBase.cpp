@@ -21,9 +21,8 @@ AShooterCharacterBase::AShooterCharacterBase(const FObjectInitializer& ObjectIni
 	AbilitySystemComponent->SetIsReplicated(true);
 
 	// Create the attribute set, this replicates by default
-	AttributeSet = CreateDefaultSubobject<UShooterAttributeSet>(TEXT("AttributeSet"));
+	AttributeSetBase = CreateDefaultSubobject<UShooterAttributeSet>(TEXT("AttributeSetBase"));
 
-	CharacterLevel = 1;
 	bAbilitiesInitialized = false;
 	IsProtectedByShield = false;
 	bInvincible = false;
@@ -64,9 +63,33 @@ UAbilitySystemComponent* AShooterCharacterBase::GetAbilitySystemComponent() cons
 	return AbilitySystemComponent;
 }
 
+void AShooterCharacterBase::InitializeDefaultAttributes()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Character::InitializeDefaultAttributes()"));
+	check(AbilitySystemComponent);
+
+	if (!DefaultAttributes)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s() Missing DefaultAttributes for %s. Please fill in the character's Blueprint."), *FString(__FUNCTION__), *GetName());
+		return;
+	}
+
+	// Can run on Server and Client
+	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle NewHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributes, GetCharacterLevel(), EffectContext);
+	if (NewHandle.IsValid())
+	{
+		FGameplayEffectSpec effect = *NewHandle.Data.Get();
+		UE_LOG(LogTemp, Warning, TEXT("AddStartupGameplayAbilities( Level = %d )"), effect.GetLevel());
+		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), AbilitySystemComponent);
+	}
+}
+
 void AShooterCharacterBase::AddStartupGameplayAbilities()
 {
-	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::AddStartupGameplayAbilities( PassiveGameplayEffects.num = %d)"), PassiveGameplayEffects.Num());
+	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::AddStartupGameplayAbilities( DefaultEffects.num = %d)"), DefaultEffects.Num());
 
 	check(AbilitySystemComponent);
 
@@ -79,7 +102,7 @@ void AShooterCharacterBase::AddStartupGameplayAbilities()
 		}
 
 		// Now apply passives
-		for (TSubclassOf<UGameplayEffect>& GameplayEffect : PassiveGameplayEffects)
+		for (TSubclassOf<UGameplayEffect>& GameplayEffect : DefaultEffects)
 		{
 			//UGameplayEffect* GameplayEffectObj = GameplayEffect->GetDefaultObject<UGameplayEffect>();
 			//if (GameplayEffectObj)
@@ -281,6 +304,25 @@ void AShooterCharacterBase::PossessedBy(AController* NewController)
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::PossessedBy()"));
 	Super::PossessedBy(NewController);
 
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_Authority"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_Authority"));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_AutonomousProxy"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
+		break;
+	case ENetRole::ROLE_SimulatedProxy:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_SimulatedProxy"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_SimulatedProxy"));
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_None"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
+		break;
+	}
 	//AShooterPlayerController* PC = Cast<AShooterPlayerController>(NewController);
 	// Try setting the inventory source, this will fail for AI
 	InventorySource = NewController;
@@ -289,18 +331,37 @@ void AShooterCharacterBase::PossessedBy(AController* NewController)
 	InventoryUpdateHandle = InventorySource->GetInventoryItemChangedNativeDelegate().AddUObject(this, &AShooterCharacterBase::OnInventoryItemChanged);
 	//InventorySource->GetInventoryItemChangedDelegate().Add(InventoryUpdateHandle);
 	InventoryLoadedHandle = InventorySource->GetInventoryLoadedDelegate().AddUObject(this, &AShooterCharacterBase::RefreshSlottedGameplayAbilities);
-	//if (InventorySource)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::PossessedBy( CharacterBase->InventorySource UpdateDelegates bound.)"));
-	//	InventoryUpdateHandle = InventorySource->GetSlottedItemChangedDelegate().AddUObject(this, &AShooterCharacterBase::OnItemSlotChanged);
-	//	InventoryLoadedHandle = InventorySource->GetInventoryLoadedDelegate().AddUObject(this, &AShooterCharacterBase::RefreshSlottedGameplayAbilities);
-	//}
-
+	
+	/*
 	// Initialize our abilities
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		AddStartupGameplayAbilities();
+	}*/
+	
+	//AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(NewController);
+	AShooterPlayerState* PS = Cast<AShooterPlayerState>(PlayerState);
+	if (PS)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::PossessedBy( name = %s)"), *PS->GetShortPlayerName());
+		// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
+		AbilitySystemComponent = Cast<UShooterAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+
+		// AI won't have PlayerControllers so we can init again here just to be sure. No harm in initing twice for heroes that have PlayerControllers.
+		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
+
+		// Set the AttributeSetBase for convenience attribute functions
+		AttributeSetBase = PS->GetAttributeSetBase();
+		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
+		// For now assume possession = spawn/respawn.
+		InitializeDefaultAttributes();
+
+		AddStartupGameplayAbilities();
+
+		// Set Health/Mana/Stamina to their max. This is only necessary for *Respawn*.
+		SetHealth(GetMaxHealth());
+		SetMana(GetMaxMana());
 	}
 }
 
@@ -387,6 +448,27 @@ void AShooterCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AShooterCharacterBase, CharacterLevel);
+}
+
+void AShooterCharacterBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	AShooterPlayerState* SPS = Cast<AShooterPlayerState>(PlayerState);
+	// [client] as soon as PlayerState is assigned, set team colors of this pawn for local 
+	if (SPS != NULL)
+	{
+		// Set the ASC for clients. Server does this in PossessedBy.
+		AbilitySystemComponent = Cast<UShooterAbilitySystemComponent>(SPS->GetAbilitySystemComponent());
+
+		// Init ASC Actor Info for clients. Server will init its ASC when it possesses a new Actor.
+		AbilitySystemComponent->InitAbilityActorInfo(SPS, this);
+
+		// Set the AttributeSet for convenience attribute functions
+		AttributeSetBase = SPS->GetAttributeSetBase();
+
+
+	}
 }
 
 bool AShooterCharacterBase::IsAlive() const
@@ -480,42 +562,82 @@ void AShooterCharacterBase::DoSkillAttack()
 
 float AShooterCharacterBase::GetHealth() const
 {
-	return AttributeSet->GetHealth();
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_Authority"));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_AutonomousProxy"));
+		break;
+	case ENetRole::ROLE_SimulatedProxy:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_SimulatedProxy"));
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_None"));
+		break;
+	}
+	AShooterPlayerState* PS = Cast<AShooterPlayerState>(PlayerState);
+	if (PS)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::GetHealth( NikeName = %s)"), *PS->GetShortPlayerName());
+		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::GetHealth(PS.Health = %f"), PS->GetHealth());
+	}
+	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::GetHealth() = %f"), AttributeSetBase->GetHealth());
+	return AttributeSetBase->GetHealth();
 }
 
 float AShooterCharacterBase::GetMaxHealth() const
 {
-	return AttributeSet->GetMaxHealth();
+	return AttributeSetBase->GetMaxHealth();
 }
 
 float AShooterCharacterBase::GetRestoreHealth() const
 {
-	return AttributeSet->GetRestoreHealth();
+	return AttributeSetBase->GetRestoreHealth();
 }
 
 float AShooterCharacterBase::GetMana() const
 {
-	return AttributeSet->GetMana();
+	return AttributeSetBase->GetMana();
 }
 
 float AShooterCharacterBase::GetMaxMana() const
 {
-	return AttributeSet->GetMaxMana();
+	return AttributeSetBase->GetMaxMana();
 }
 
 float AShooterCharacterBase::GetRestoreMana() const
 {
-	return AttributeSet->GetRestoreMana();
+	return AttributeSetBase->GetRestoreMana();
 }
 
 float AShooterCharacterBase::GetMoveSpeed() const
 {
-	return AttributeSet->GetMoveSpeed();
+	return AttributeSetBase->GetMoveSpeed();
+}
+
+void AShooterCharacterBase::SetHealth(float Health)
+{
+	if (Health < 0 )
+	{
+		Health = 0.f;
+	}
+	AttributeSetBase->SetHealth(Health);
+}
+
+void AShooterCharacterBase::SetMana(float Mana)
+{
+	if (Mana < 0)
+	{
+		Mana = 0.f;
+	}
+	AttributeSetBase->SetMana(Mana);
 }
 
 int32 AShooterCharacterBase::GetCharacterLevel() const
 {
-	return CharacterLevel;
+	return 1;
 }
 
 bool AShooterCharacterBase::SetCharacterLevel(int32 NewLevel)
@@ -651,28 +773,28 @@ bool AShooterCharacterBase::GetCooldownRemainingForTag(FGameplayTagContainer Coo
 	return false;
 }
 
-void AShooterCharacterBase::HandleDamage(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser)
+void AShooterCharacterBase::HandleDamage(float DamageAmount, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::HandleDamage()"));
-	OnDamaged(DamageAmount, HitInfo, DamageTags, EventInstigator, DamageCauser);
+	OnDamaged(DamageAmount, DamagedActor, DamageEvent, EventInstigator, DamageCauser);
 }
 
-void AShooterCharacterBase::OnDamaged_Implementation(float DamageAmount, const FHitResult& HitInfo, const struct FGameplayTagContainer& DamageTags, class AShooterCharacterBase* EventInstigator, AActor* DamageCauser)
+void AShooterCharacterBase::OnDamaged_Implementation(float DamageAmount, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnDamaged_Implementation( CurrentHealth = %d)"), GetHealth());
 }
 
-void AShooterCharacterBase::HandleHealthChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
+void AShooterCharacterBase::HandleHealthChanged(float DeltaValue)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::HandleHealthChanged()"));
 	// We only call the BP callback if this is not the initial ability setup
 	if (bAbilitiesInitialized)
 	{
-		OnHealthChanged(DeltaValue, EventTags);
+		OnHealthChanged(DeltaValue);
 	}
 }
 
-void AShooterCharacterBase::OnHealthChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
+void AShooterCharacterBase::OnHealthChanged_Implementation(float DeltaValue)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnHealthChanged_Implementation( CurrentHealth = %d)"), GetHealth());
 
@@ -685,23 +807,23 @@ void AShooterCharacterBase::OnHealthChanged_Implementation(float DeltaValue, con
 	}
 }
 
-void AShooterCharacterBase::HandleManaChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
+void AShooterCharacterBase::HandleManaChanged(float DeltaValue)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::HandleManaChanged()"));
 	if (bAbilitiesInitialized)
 	{
-		OnManaChanged(DeltaValue, EventTags);
+		OnManaChanged(DeltaValue);
 	}
 }
 
-void AShooterCharacterBase::OnManaChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
+void AShooterCharacterBase::OnManaChanged_Implementation(float DeltaValue)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::OnManaChanged_Implementation()"));
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 	MyPC->NotifyMPChanged(GetMana(), GetMaxMana(), GetRestoreMana());
 }
 
-void AShooterCharacterBase::HandleMoveSpeedChanged(float DeltaValue, const struct FGameplayTagContainer& EventTags)
+void AShooterCharacterBase::HandleMoveSpeedChanged(float DeltaValue)
 {
 	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::HandleMoveSpeedChanged()"));
 	// Update the character movement's walk speed
@@ -709,11 +831,11 @@ void AShooterCharacterBase::HandleMoveSpeedChanged(float DeltaValue, const struc
 
 	if (bAbilitiesInitialized)
 	{
-		OnMoveSpeedChanged(DeltaValue, EventTags);
+		OnMoveSpeedChanged(DeltaValue);
 	}
 }
 
-void AShooterCharacterBase::OnMoveSpeedChanged_Implementation(float DeltaValue, const struct FGameplayTagContainer& EventTags)
+void AShooterCharacterBase::OnMoveSpeedChanged_Implementation(float DeltaValue)
 {
 
 }

@@ -9,10 +9,12 @@
 #include "Notify/AnimNotifyState_JumpSection.h"
 #include "Items/ShooterItem.h"
 #include "ShooterCharacterBase.h"
+#include "UMG/Public/Components/WidgetComponent.h"
 #include "Abilities/ShooterAbilityTypes.h"
 #include "Abilities/ShooterAttributeSet.h"
 #include "Abilities/ShooterGameplayAbility.h"
 #include "Abilities/ShooterAbilitySystemComponent.h"
+#include "UI/Player/ShooterPlayerStatusBar.h"
 #include "ShooterCharacter.generated.h"
 
 namespace EPawnState
@@ -83,7 +85,7 @@ public:
 	virtual void PawnClientRestart() override;
 
 	/** [server] perform PlayerState related setup */
-	virtual void PossessedBy(class AController* C) override;
+	virtual void PossessedBy(class AController* NewController) override;
 
 	/** [client] perform PlayerState related setup */
 	virtual void OnRep_PlayerState() override;
@@ -417,7 +419,16 @@ private:
 	class UCameraComponent* FollowCamera;
 
 protected:
-	
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "StatusBar")
+	TSubclassOf<class UShooterPlayerStatusBar> PlayerStatusBarClass;
+
+	UPROPERTY()
+	class UShooterPlayerStatusBar* PlayerStatusBar;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "StatusBar")
+	class UWidgetComponent* PlayerStatusBarComponent;
+
 	/** socket or bone name for attaching weapon mesh */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
 	FName WeaponAttachPoint;
@@ -630,6 +641,10 @@ public:
 	/** Take damage, handle death */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
 	
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void ShowDamage(float Damage);
+
 	/** Pawn suicide */
 	virtual void Suicide();
 
@@ -763,9 +778,13 @@ protected:
 	/** Builds list of points to check for pausing replication for a connection*/
 	void BuildPauseReplicationCheckPoints(TArray<FVector>& RelevancyCheckPoints);
 
-protected:
 	/** Returns Mesh1P subobject **/
 	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+
+	// Creates and initializes the floating status bar for heroes.
+	// Safe to call many times because it checks to make sure it only executes once.
+	UFUNCTION()
+	void InitializePlayerStatusBar();
 
 public:
 	virtual void UnPossessed() override;

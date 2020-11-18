@@ -396,7 +396,7 @@ void AShooterRangedWeapon::HandleFiring()
 
 		if (MyPawn && MyPawn->IsLocallyControlled())
 		{
-			FireWeapon();
+			//FireWeapon();
 
 			UseAmmo();
 
@@ -451,6 +451,21 @@ void AShooterRangedWeapon::HandleFiring()
 	}
 
 	LastFireTime = GetWorld()->GetTimeSeconds();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Weapon usage
+
+void AShooterRangedWeapon::WeaponHit(const FHitResult& Impact, const FVector& Origin, const FVector& HitDir, int32 RandomSeed, float ReticleSpread)
+{
+	UE_LOG(LogTemp, Warning, TEXT("RangedWeapon::WeaponHit()"));
+
+	//ProcessHit(Impact, Origin, ShootDir, RandomSeed, ReticleSpread);
+}
+
+void AShooterRangedWeapon::WeaponDistanceHit()
+{
+
 }
 
 bool AShooterRangedWeapon::ServerHandleFiring_Validate()

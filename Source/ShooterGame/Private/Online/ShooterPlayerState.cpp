@@ -1,6 +1,10 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
 
 #include "ShooterGame.h"
+#include "Abilities/ShooterAttributeSet.h"
+#include "Abilities/ShooterAbilitySystemComponent.h"
+#include "Player/ShooterCharacterBase.h"
+#include "Player/ShooterPlayerController.h"
 #include "ShooterPlayerState.h"
 
 AShooterPlayerState::AShooterPlayerState(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -16,6 +20,34 @@ AShooterPlayerState::AShooterPlayerState(const FObjectInitializer& ObjectInitial
 	InventorySlot.Reserve(PLAYER_INVENTORY_SLOT_COUNT);
 	WeaponSlot.Reserve(PLAYER_WEAPON_SLOT_COUNT);
 	SkillSlot.Reserve(PLAYER_ABILITY_SLOT_COUNT);
+
+	// Create ability system component, and set it to be explicitly replicated
+	AbilitySystemComponent = CreateDefaultSubobject<UShooterAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+
+	// Mixed mode means we only are replicated the GEs to ourself, not the GEs to simulated proxies. If another GDPlayerState (Hero) receives a GE,
+	// we won't be told about it by the Server. Attributes, GameplayTags, and GameplayCues will still replicate to us.
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+
+	// Create the attribute set, this replicates by default
+	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
+	// automatically registers the AttributeSet with the AbilitySystemComponent
+	AttributeSetBase = CreateDefaultSubobject<UShooterAttributeSet>(TEXT("AttributeSetBase"));
+
+	// Set PlayerState's NetUpdateFrequency to the same as the Character.
+	// Default is very low for PlayerStates and introduces perceived lag in the ability system.
+	// 100 is probably way too high for a shipping game, you can adjust to fit your needs.
+	NetUpdateFrequency = 100.0f;
+}
+
+UAbilitySystemComponent* AShooterPlayerState::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+UShooterAttributeSet * AShooterPlayerState::GetAttributeSetBase() const
+{
+	return AttributeSetBase;
 }
 
 void AShooterPlayerState::Reset()
@@ -180,6 +212,52 @@ void AShooterPlayerState::UpdateInventorySlotted(FShooterItemSlot NewSlot, UShoo
 			ShooterCharacter->UpdateInventoryItems(NewSlot, NewItem);
 		}
 	}
+}
+
+float AShooterPlayerState::GetHealth() const
+{
+	UE_LOG(LogTemp, Warning, TEXT("PlayerState::GetHealth() = %d"), AttributeSetBase->GetHealth());
+	return AttributeSetBase->GetHealth();
+}
+
+float AShooterPlayerState::GetMaxHealth() const
+{
+	return AttributeSetBase->GetMaxHealth();
+}
+
+float AShooterPlayerState::GetRestoreHealth() const
+{
+	return AttributeSetBase->GetRestoreHealth();
+}
+
+float AShooterPlayerState::GetMana() const
+{
+	return AttributeSetBase->GetMana();
+}
+
+float AShooterPlayerState::GetMaxMana() const
+{
+	return AttributeSetBase->GetMaxMana();
+}
+
+float AShooterPlayerState::GetRestoreMana() const
+{
+	return AttributeSetBase->GetRestoreMana();
+}
+
+float AShooterPlayerState::GetMaxEXP() const
+{
+	return AttributeSetBase->GetMaxEXP();
+}
+
+float AShooterPlayerState::GetProvideEXP() const
+{
+	return AttributeSetBase->GetProvideEXP();
+}
+
+float AShooterPlayerState::GetCharacterLevel() const
+{
+	return AttributeSetBase->GetCharacterLevel();
 }
 
 int32 AShooterPlayerState::GetTeamNum() const

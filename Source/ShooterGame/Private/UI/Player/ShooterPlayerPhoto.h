@@ -41,6 +41,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerPhoto", meta = (BindWidget))
 	UTextBlock* LevelLabel;
 
-	
-	
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "PlayerPhoto")
+	void UpdatePlayerPhoto(bool IsAlive, FText InDelay, FText InLevel) const;
+
+	UFUNCTION(BlueprintCallable, Category = "PlayerPhoto")
+	void SetDieCooldownLabel(FText InDelay) const;
+
+	UFUNCTION(BlueprintCallable, Category = "PlayerPhoto")
+	void SetLevelLabel(FText InLevel) const;
+
 };

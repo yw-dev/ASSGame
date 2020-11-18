@@ -2,10 +2,14 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "GameFramework/PlayerState.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "ShooterPlayerState.generated.h"
 
 UCLASS()
-class AShooterPlayerState : public APlayerState
+class AShooterPlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_UCLASS_BODY()
 
@@ -43,6 +47,33 @@ class AShooterPlayerState : public APlayerState
 
 	/** player Coins earnings by Enemy */
 	void CalculateCoins(AShooterPlayerState* KilledBy, int32 Bounty);
+
+	/** Returns current health, will be 0 if dead */
+	virtual float GetHealth() const;
+
+	/** Returns maximum health, health will never be greater than this */
+	virtual float GetMaxHealth() const;
+
+	/** Returns maximum health, health will never be greater than this */
+	virtual float GetRestoreHealth() const;
+
+	/** Returns current mana */
+	virtual float GetMana() const;
+
+	/** Returns maximum mana, mana will never be greater than this */
+	virtual float GetMaxMana() const;
+
+	/** Returns maximum mana, mana will never be greater than this */
+	virtual float GetRestoreMana() const;
+
+	/** Returns Current Level Exp */
+	virtual float GetMaxEXP() const;
+
+	/** Returns Current ProvideExp */
+	virtual float GetProvideEXP() const;
+
+	/** Returns current CharacterLevel */
+	virtual float GetCharacterLevel() const;
 
 	/** get current team */
 	int32 GetTeamNum() const;
@@ -126,7 +157,21 @@ class AShooterPlayerState : public APlayerState
 	void SetQuitter(bool bInQuitter);
 
 	virtual void CopyProperties(class APlayerState* PlayerState) override;
+
+public:
+	// Implement IAbilitySystemInterface
+	class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	class UShooterAttributeSet* GetAttributeSetBase() const;
+
+
 protected:
+
+	UPROPERTY()
+	class UShooterAbilitySystemComponent* AbilitySystemComponent;
+
+	UPROPERTY()
+	class UShooterAttributeSet* AttributeSetBase;
 
 	/** Set the mesh colors based on the current teamnum variable */
 	void UpdateTeamColors();

@@ -47,7 +47,7 @@ void AShooterMeleeWeapon::EndWeaponAttack_Implementation()
 	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::EndWeaponAttack()"));
 	Super::EndWeaponAttack();
 }
-*/
+
 void AShooterMeleeWeapon::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
@@ -57,7 +57,7 @@ void AShooterMeleeWeapon::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
 }
-
+*/
 
 //////////////////////////////////////////////////////////////////////////
 // Inventory
@@ -393,7 +393,7 @@ void AShooterMeleeWeapon::HandleFiring()
 
 		if (MyPawn && MyPawn->IsLocallyControlled())
 		{
-			FireWeapon();
+			//WeaponHit();
 
 			// update firing FX on remote clients if function was called on server
 			BurstCounter++;
@@ -436,6 +436,21 @@ void AShooterMeleeWeapon::ServerHandleFiring_Implementation()
 {
 	// update firing FX on remote clients
 	BurstCounter++;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Weapon usage
+
+void AShooterMeleeWeapon::WeaponHit(const FHitResult& Impact, const FVector& Origin, const FVector& ShootDir, int32 RandomSeed, float ReticleSpread)
+{
+	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::WeaponHit()"));
+
+	//ProcessHit(Impact, Origin, ShootDir, RandomSeed, ReticleSpread);
+}
+
+void AShooterMeleeWeapon::WeaponDistanceHit()
+{
+
 }
 
 /** [local + server] firing started */

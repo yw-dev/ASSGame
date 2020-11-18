@@ -23,7 +23,7 @@ void UShooterPlayerView::NativeConstruct()
 	Super::NativeConstruct();
 
 	AShooterPlayerController* Controller = Cast<AShooterPlayerController>(GetOwningPlayer());
-	Controller->GetInventoryItemChangedNativeDelegate().AddUObject(this, &UShooterPlayerView::OnInventoryItemChanged);
+	Controller->GetInventoryItemChangedDelegate().AddDynamic(this, &UShooterPlayerView::OnInventoryItemChanged);
 	Controller->GetSlottedItemChangedDelegate().AddUObject(this, &UShooterPlayerView::OnSlottedItemChanged);
 }
 

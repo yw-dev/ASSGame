@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/ProgressBar.h"
+#include "Online/ShooterPlayerState.h"
 #include "Common/UWidgets/ShooterSkillItemWidget.h"
 #include "ShooterPlayerAbility.generated.h"
 

@@ -27,8 +27,11 @@ DECLARE_LOG_CATEGORY_EXTERN(LogShooterWeapon, Log, All);
 #define COLLISION_OC_PROJECTILE		ECC_GameTraceChannel2
 #define COLLISION_OC_PICKUP			ECC_GameTraceChannel3
 #define COLLISION_OC_WEAPON			ECC_GameTraceChannel4
-#define COLLISION_OC_MARGIC			ECC_GameTraceChannel5
+#define COLLISION_OC_SKILL			ECC_GameTraceChannel5
 #define COLLISION_TC_MARGIC			ECC_GameTraceChannel6
+#define COLLISION_OC_MELEE			ECC_GameTraceChannel6
+#define COLLISION_BUFF				ECC_GameTraceChannel7
+#define COLLISION_DEBUFF			ECC_GameTraceChannel8
 
 #define MAX_PLAYER_NAME_LENGTH 16
 

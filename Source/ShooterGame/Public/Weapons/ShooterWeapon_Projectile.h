@@ -70,7 +70,7 @@ protected:
 	// Weapon usage
 
 	/** [local] weapon specific fire implementation */
-	virtual void FireWeapon() override;
+	virtual void FireWeapon() ;
 
 	/** spawn projectile on server */
 	UFUNCTION(reliable, server, WithValidation)

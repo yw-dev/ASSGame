@@ -133,9 +133,9 @@ public:
 
 	virtual void Destroyed() override;
 
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
-	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
 	//UFUNCTION(BlueprintNativeEvent, Category = "Game|Weapon")
 	//void BeginWeaponAttack(FGameplayTag EventTag, float AttackDelayTime, int32 AttackDelayCount) override;
@@ -221,8 +221,11 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Weapon usage
 
-	/** [local] weapon specific fire implementation */
-	virtual void FireWeapon() PURE_VIRTUAL(AShooterMeleeWeapon::FireWeapon, );
+	/** [local] weapon Melee physic attack specific fire implementation */
+	virtual void WeaponHit(const FHitResult& Impact, const FVector& Origin, const FVector& HitDir, int32 RandomSeed, float ReticleSpread) override;
+
+	/** [local] weapon long distance attack specific fire implementation */
+	virtual void WeaponDistanceHit() override;
 
 	/** [server] fire & update ammo */
 	UFUNCTION(reliable, server, WithValidation)

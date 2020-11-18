@@ -51,7 +51,8 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_OC_PROJECTILE, ECR_Block);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_TC_WEAPON, ECR_Block);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_OC_WEAPON, ECR_Overlap);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_OC_MARGIC, ECR_Block);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_OC_MELEE, ECR_Overlap);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_OC_SKILL, ECR_Block);
 	/*
 	Mesh1P = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("PawnMesh1P"));
 	Mesh1P->SetupAttachment(GetCapsuleComponent());
@@ -74,19 +75,36 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	GetMesh()->SetCollisionResponseToChannel(COLLISION_TC_WEAPON, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(COLLISION_OC_PROJECTILE, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(COLLISION_OC_WEAPON, ECR_Overlap);
-	GetMesh()->SetCollisionResponseToChannel(COLLISION_OC_MARGIC, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(COLLISION_OC_MELEE, ECR_Overlap);
+	GetMesh()->SetCollisionResponseToChannel(COLLISION_OC_SKILL, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	CameraBoom->SetRelativeLocation(FVector(0, 0, 68.492264));
+	CameraBoom->SetupAttachment(RootComponent);
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	PlayerStatusBarComponent = CreateDefaultSubobject<UWidgetComponent>(FName("PlayerStatusBarComponent"));
+	PlayerStatusBarComponent->SetupAttachment(RootComponent);
+	PlayerStatusBarComponent->SetRelativeLocation(FVector(0, 0, 120));
+	PlayerStatusBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	PlayerStatusBarComponent->SetDrawSize(FVector2D(400, 400));
+	PlayerStatusBarComponent->bOnlyOwnerSee = false;
+	PlayerStatusBarComponent->bOwnerNoSee = true;
+	PlayerStatusBarComponent->MarkRenderStateDirty();
+
+	PlayerStatusBarClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Game/Blueprints/WidgetBP/Player/Player_StatusBar.Player_StatusBar_C"));
+	if (!PlayerStatusBarClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s() Failed to find PlayerStatusBarClass. If it was moved, please update the reference location in C++."), *FString(__FUNCTION__));
+	}
 
 	// Create ability system component, and set it to be explicitly replicated
 	//AbilitySystemComponent = CreateDefaultSubobject<UShooterAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
@@ -146,8 +164,6 @@ void AShooterCharacter::PostInitializeComponents()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Character::PostInitializeComponents( Health = %f  MaxHealth = %f)"), GetHealth(), GetMaxHealth());
 		Health = GetHealth();
-		//SpawnDefaultInventory();
-		//SpawnPropsActors();
 	}
 
 	// set initial mesh visibility (3rd person view)
@@ -215,11 +231,8 @@ void AShooterCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// [client] as soon as PlayerState is assigned, set team colors of this pawn for local 
-	if (PlayerState != NULL)
-	{
-		UpdateTeamColorsAllMIDs();
-	}
+	UpdateTeamColorsAllMIDs();
+	InitializePlayerStatusBar();
 }
 
 FRotator AShooterCharacter::GetAimOffsets() const
@@ -278,6 +291,32 @@ void AShooterCharacter::UpdateTeamColors(UMaterialInstanceDynamic* UseMID)
 		{
 			float MaterialParam = (float)MyPlayerState->GetTeamNum();
 			UseMID->SetScalarParameterValue(TEXT("Team Color Index"), MaterialParam);
+		}
+	}
+}
+
+void AShooterCharacter::InitializePlayerStatusBar()
+{
+	// Only create once
+	if (PlayerStatusBar || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	// Setup UI for Locally Owned Players only, not AI or the server's copy of the PlayerControllers
+	AShooterPlayerController* PC = Cast<AShooterPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PC && PC->IsLocalPlayerController() && PlayerStatusBarClass)
+	{
+		AShooterPlayerState* MyPlayerState = Cast<AShooterPlayerState>(PlayerState);
+		PlayerStatusBar = CreateWidget<UShooterPlayerStatusBar>(PC, PlayerStatusBarClass);
+		if (PlayerStatusBar && PlayerStatusBarComponent)
+		{
+			PlayerStatusBarComponent->SetWidget(PlayerStatusBar);
+
+			// Setup the floating status bar
+			PlayerStatusBar->SetHealthPercentage(GetHealth() / GetMaxHealth());
+			PlayerStatusBar->SetManaPercentage(MyPlayerState->GetMana() / MyPlayerState->GetMaxMana());
+			PlayerStatusBar->SetCharacterName(FText::FromString(MyPlayerState->GetShortPlayerName()));
 		}
 	}
 }
@@ -574,8 +613,11 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 	const float ActualDamage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 	if (ActualDamage > 0.f)
 	{
-		Health = GetHealth() - ActualDamage;
-		if (Health <= 0)
+		
+		SetHealth(FMath::Clamp(GetHealth() - ActualDamage, 0.0f, GetMaxHealth()));
+		//ShowDamage(ActualDamage);
+		HandleDamage(ActualDamage, this, DamageEvent, EventInstigator, DamageCauser);
+		if (GetHealth() <= 0)
 		{
 			Die(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
 		}
@@ -584,7 +626,8 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 			PlayHit(ActualDamage, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
 		}
 
-		MakeNoise(1.0f, EventInstigator ? EventInstigator->GetPawn() : this);
+		MakeNoise(1.0f, EventInstigator ? EventInstigator->GetPawn() : this); 
+		//HandleHealthChanged(-LocalDamageDone, SourceTags);
 	}
 
 	return ActualDamage;
@@ -615,7 +658,7 @@ bool AShooterCharacter::Die(float KillingDamage, FDamageEvent const& DamageEvent
 		return false;
 	}
 
-	Health = FMath::Min(0.0f, GetHealth());
+	SetHealth(FMath::Min(0.0f, GetHealth()));
 
 	// if this is an environmental death then refer to the previous killer so that they receive credit (knocked into lava pits, etc)
 	UDamageType const* const DamageType = DamageEvent.DamageTypeClass ? DamageEvent.DamageTypeClass->GetDefaultObject<UDamageType>() : GetDefault<UDamageType>();
@@ -672,7 +715,8 @@ void AShooterCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& 
 
 	// switch back to 3rd person view
 	UpdatePawnMeshes();
-
+	//PlayerStatusBarComponent->OnUnregister();
+	PlayerStatusBarComponent->DestroyComponent(true);
 	DetachFromControllerPendingDestroy();
 	StopAllAnimMontages();
 
@@ -1498,10 +1542,7 @@ void AShooterCharacter::ServerStopFire_Implementation()
 
 void AShooterCharacter::StartWeaponFire()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Character::StartWeaponFire()"));
-	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("StartWeaponFire()"));
-
-	/*
+	UE_LOG(LogTemp, Warning, TEXT("Character::StartWeaponFire()"));	
 	switch (GetNetMode())
 	{
 	case ENetMode::NM_DedicatedServer:
@@ -1525,7 +1566,7 @@ void AShooterCharacter::StartWeaponFire()
 	case ENetRole::ROLE_AutonomousProxy:
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_AutonomousProxy"));
 		break;
-	}*/
+	}
 	if (!HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Role < ROLE_Authority"));
@@ -2066,16 +2107,22 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 	if (MyPC && MyPC->HasHealthRegen())
 	{
-		if (this->GetHealth() < this->GetMaxHealth())
+		if (GetHealth() < GetMaxHealth())
 		{
-			this->Health = this->GetHealth() + 5 * DeltaSeconds;
-			if (Health > this->GetMaxHealth())
+			SetHealth(GetHealth() + GetRestoreHealth() * DeltaSeconds);
+			if (GetHealth() > GetMaxHealth())
 			{
-				Health = this->GetMaxHealth();
+				SetHealth(GetMaxHealth());
 			}
 		}
 	}
-
+	if (PlayerStatusBar)
+	{
+		// Setup the floating status bar
+		PlayerStatusBar->SetHealthPercentage(GetHealth() / GetMaxHealth());
+		PlayerStatusBar->SetManaPercentage(GetMana() / GetMaxMana());
+		//PlayerStatusBar->SetCharacterName(FText::FromString(MyPlayerState->GetShortPlayerName()));
+	}
 	if (GEngine->UseSound())
 	{
 		if (LowHealthSound)
@@ -2109,16 +2156,16 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 	    USoundNodeLocalPlayer::GetLocallyControlledActorCache().Add(UniqueID, bLocallyControlled);
 	});
 	
-	TArray<FVector> PointsToTest;
-	BuildPauseReplicationCheckPoints(PointsToTest);
+	//TArray<FVector> PointsToTest;
+	//BuildPauseReplicationCheckPoints(PointsToTest);
 
-	if (NetVisualizeRelevancyTestPoints == 1)
-	{
-		for (FVector PointToTest : PointsToTest)
-		{
-			DrawDebugSphere(GetWorld(), PointToTest, 10.0f, 8, FColor::Red);
-		}
-	}
+	//if (NetVisualizeRelevancyTestPoints == 1)
+	//{
+	//	for (FVector PointToTest : PointsToTest)
+	//	{
+	//		DrawDebugSphere(GetWorld(), PointToTest, 10.0f, 8, FColor::Red);
+	//	}
+	//}
 }
 
 void AShooterCharacter::BeginDestroy()
@@ -2500,9 +2547,6 @@ void AShooterCharacter::PossessedBy(AController* NewController)
 	UE_LOG(LogTemp, Warning, TEXT("Character::PossessedBy()"));
 	Super::PossessedBy(NewController);
 
-	// [server] as soon as PlayerState is assigned, set team colors of this pawn for local player
-	UpdateTeamColorsAllMIDs();
-
 	InventorySource = NewController;
 	//FOnSlottedItemChangedNative OnSlottedItemChangedNative = InventorySource->GetSlottedItemChangedDelegate();
 
@@ -2511,8 +2555,13 @@ void AShooterCharacter::PossessedBy(AController* NewController)
 
 	AShooterPlayerController* PC = Cast<AShooterPlayerController>(NewController);
 	const TMap<FShooterItemSlot, UShooterItem*>& SlottedItems = PC->GetSlottedItemMap();
+	PC->SetHealthRegen(true);
 	UE_LOG(LogTemp, Warning, TEXT("Character::SpawnPropsActors(  PC->SlottedItems：%d)"), SlottedItems.Num());
 
+	// [server] as soon as PlayerState is assigned, set team colors of this pawn for local player
+	UpdateTeamColorsAllMIDs();
+	// status bar widget component.
+	InitializePlayerStatusBar();
 	// 道具
 	SpawnPropsActors();
 	//InventoryItems.Reset();
@@ -2536,13 +2585,11 @@ void AShooterCharacter::PossessedBy(AController* NewController)
 			}
 		}
 	}*/
-	/*
+	
 	// Initialize our abilities
-	if (AbilitySystemComponent)
+	/*if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		//this->UpdatePawnMeshes
-		//AbilitySystemComponent->SetAvatarActor(this);
 		AbilitySystemComponent->RefreshAbilityActorInfo();
 		AddStartupGameplayAbilities();
 	}*/
@@ -2551,7 +2598,7 @@ void AShooterCharacter::PossessedBy(AController* NewController)
 void AShooterCharacter::UnPossessed()
 {
 	Super::UnPossessed();
-	/*
+	
 	// Unmap from inventory source
 	if (InventorySource && InventoryUpdateHandle.IsValid())
 	{
@@ -2562,7 +2609,7 @@ void AShooterCharacter::UnPossessed()
 		InventoryLoadedHandle.Reset();
 	}
 
-	InventorySource = nullptr;*/
+	InventorySource = nullptr;
 }
 
 void AShooterCharacter::OnRep_Controller()

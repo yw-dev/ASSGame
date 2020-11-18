@@ -30,8 +30,7 @@ AShooterGameMode::AShooterGameMode(const FObjectInitializer& ObjectInitializer) 
 	GameStateClass = AShooterGameState::StaticClass();
 	ReplaySpectatorPlayerControllerClass = AShooterDemoSpectator::StaticClass();
 
-	MinRespawnDelay = 5.0f;
-
+	MinRespawnDelay = 3;
 	HasPlayerConnected = false;
 	bAllowBots = true;	
 	bNeedsBotCreation = true;
