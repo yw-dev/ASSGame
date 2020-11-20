@@ -40,26 +40,33 @@ void UAnimNotifyState_WeaponTrace::NotifyTick(USkeletalMeshComponent * MeshComp,
 				CurrentWeapon->WeaponHit(Impact, TraceLocation1, WeaponMesh->GetSocketLocation("TraceSocket1"), 0.f, 0.f);
 			}
 		}
-		UKismetSystemLibrary::LineTraceMulti(Player->GetWorld(), TraceLocation2, WeaponMesh->GetSocketLocation("TraceSocket2"), ETraceTypeQuery::TraceTypeQuery4, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, HitResults, true, FLinearColor::Red, FLinearColor::Green, 10.f);
-		for (int i = 0; i < HitResults.Num(); i++)
+		const FHitResult Impact2 = CurrentWeapon->WeaponTraceSingle(TraceLocation2, WeaponMesh->GetSocketLocation("TraceSocket2"));
+		//UKismetSystemLibrary::LineTraceMulti(Player->GetWorld(), TraceLocation2, WeaponMesh->GetSocketLocation("TraceSocket2"), ETraceTypeQuery::TraceTypeQuery4, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, HitResults, true, FLinearColor::Red, FLinearColor::Green, 10.f);
+		//for (int i = 0; i < HitResults.Num(); i++)
+		//{
+		if (Impact2.GetActor())
 		{
-			AActor*HitActor = HitResults[i].GetActor();//获取本次射线击中的Actor//
+			AActor*HitActor = Impact2.GetActor();//获取本次射线击中的Actor//
+			//AActor*HitActor = HitResults[i].GetActor();//获取本次射线击中的Actor//
 			if (!HitActors.Contains(HitActor))//查询数组中是否有本次击中的Actor，如果没有则添加进数组并调用自带伤害函数，防止一次通知内多次击中的情况//
 			{
 				HitActors.Add(HitActor);
 				//UGameplayStatics::ApplyDamage(HitActor, 10.f, EventInstigator, Player, DamageTypeClass);
-				CurrentWeapon->WeaponHit(HitResults[i], TraceLocation2, WeaponMesh->GetSocketLocation("TraceSocket2"), 0.f, 0.f);
+				CurrentWeapon->WeaponHit(Impact2, TraceLocation2, WeaponMesh->GetSocketLocation("TraceSocket2"), 0.f, 0.f);
 			}
 		}
-		UKismetSystemLibrary::LineTraceMulti(Player->GetWorld(), TraceLocation3, WeaponMesh->GetSocketLocation("TraceSocket3"), ETraceTypeQuery::TraceTypeQuery4, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, HitResults, true, FLinearColor::Red, FLinearColor::Green, 10.f);
-		for (int i = 0; i < HitResults.Num(); i++)
+		const FHitResult Impact3 = CurrentWeapon->WeaponTraceSingle(TraceLocation3, WeaponMesh->GetSocketLocation("TraceSocket3"));
+		//UKismetSystemLibrary::LineTraceMulti(Player->GetWorld(), TraceLocation3, WeaponMesh->GetSocketLocation("TraceSocket3"), ETraceTypeQuery::TraceTypeQuery4, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, HitResults, true, FLinearColor::Red, FLinearColor::Green, 10.f);
+		//for (int i = 0; i < HitResults.Num(); i++)
+		//{
+		if (Impact3.GetActor())
 		{
-			AActor*HitActor = HitResults[i].GetActor();//获取本次射线击中的Actor//
+			AActor*HitActor = Impact3.GetActor();//获取本次射线击中的Actor//
 			if (!HitActors.Contains(HitActor))//查询数组中是否有本次击中的Actor，如果没有则添加进数组并调用自带伤害函数，防止一次通知内多次击中的情况//
 			{
 				HitActors.Add(HitActor);
 				//UGameplayStatics::ApplyDamage(HitActor, 10.f, EventInstigator, Player, DamageTypeClass);
-				CurrentWeapon->WeaponHit(HitResults[i], TraceLocation3, WeaponMesh->GetSocketLocation("TraceSocket3"), 0.f, 0.f);
+				CurrentWeapon->WeaponHit(Impact3, TraceLocation3, WeaponMesh->GetSocketLocation("TraceSocket3"), 0.f, 0.f);
 			}
 		}
 		//}

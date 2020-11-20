@@ -10,6 +10,7 @@
 #include "GameplayTagsModule.h"
 #include "UI/Menu/Widgets/SShooterPawnGuideWidget.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "ShooterBlueprintLibrary.generated.h"
 
 /**
@@ -70,6 +71,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = RegexHelper)
 	static bool IsValidIP(const FString& Value, const FString Reg);
+
+	UFUNCTION(BlueprintCallable, Category = LineTraceHelper)
+	static void DrawDebugLineTraceSingle(const UWorld* World, const FVector& Start, const FVector& End, EDrawDebugTrace::Type DrawDebugType, bool bHit, const FHitResult& OutHit, FLinearColor TraceColor, FLinearColor TraceHitColor, float DrawTime);
 
 	/** 
 	* 根据字符串获取Gameplay Tag 
@@ -356,7 +360,6 @@ public:
 
 		return false;
 	}
-
 
 };
 

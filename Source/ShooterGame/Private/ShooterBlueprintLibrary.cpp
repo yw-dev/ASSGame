@@ -104,6 +104,29 @@ bool UShooterBlueprintLibrary::IsValidIP(const FString& Value, const FString Reg
 	return regMatcher.FindNext();
 }
 
+void UShooterBlueprintLibrary::DrawDebugLineTraceSingle(const UWorld* World, const FVector& Start, const FVector& End, EDrawDebugTrace::Type DrawDebugType, bool bHit, const FHitResult& OutHit, FLinearColor TraceColor, FLinearColor TraceHitColor, float DrawTime)
+{
+	if (DrawDebugType != EDrawDebugTrace::None)
+	{
+		bool bPersistent = DrawDebugType == EDrawDebugTrace::Persistent;
+		float LifeTime = (DrawDebugType == EDrawDebugTrace::ForDuration) ? DrawTime : 0.f;
+
+		// @fixme, draw line with thickness = 2.f?
+		if (bHit && OutHit.bBlockingHit)
+		{
+			// Red up to the blocking hit, green thereafter
+			DrawDebugLine(World, Start, OutHit.ImpactPoint, TraceColor.ToFColor(true), bPersistent, LifeTime);
+			DrawDebugLine(World, OutHit.ImpactPoint, End, TraceHitColor.ToFColor(true), bPersistent, LifeTime);
+			DrawDebugPoint(World, OutHit.ImpactPoint, 16.f, TraceColor.ToFColor(true), bPersistent, LifeTime);
+		}
+		else
+		{
+			// no hit means all red
+			DrawDebugLine(World, Start, End, TraceColor.ToFColor(true), bPersistent, LifeTime);
+		}
+	}
+}
+
 FGameplayTag UShooterBlueprintLibrary::GetGameplayTag(const FString& TagName)
 {
 	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*TagName));

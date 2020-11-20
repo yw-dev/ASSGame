@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ShooterGame.h"
+#include "ShooterBlueprintLibrary.h"
 #include "ShooterWeaponBase.h"
 
 
@@ -257,8 +258,12 @@ FHitResult AShooterWeaponBase::WeaponTraceSingle(const FVector& StartTrace, cons
 	TraceParams.bReturnPhysicalMaterial = true;
 
 	FHitResult Hit(ForceInit);
-	GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, COLLISION_OC_MELEE, TraceParams);
+	DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Red, false, 3.0f, 0.0f, 5.0f);
+	bool const bHit = GetWorld() ? GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, COLLISION_OC_MELEE, TraceParams) : false;
 
+#if ENABLE_DRAW_DEBUG
+	UShooterBlueprintLibrary::DrawDebugLineTraceSingle(GetWorld(), StartTrace, EndTrace, EDrawDebugTrace::ForDuration, bHit, Hit, FLinearColor::Red, FLinearColor::Green, 15.0f);
+#endif
 	return Hit;
 }
 

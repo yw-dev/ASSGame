@@ -738,7 +738,7 @@ void AShooterCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& 
 	SetActorEnableCollision(true);
 
 	// Death anim
-	float DeathAnimDuration = PlayAnimMontage(DeathAnim);
+	float DeathAnimDuration = PlayAnimMontage(DeathAnim, 1.0f);
 
 	// Ragdoll
 	if (DeathAnimDuration > 0.f)
@@ -787,6 +787,10 @@ void AShooterCharacter::PlayHit(float DamageTaken, struct FDamageEvent const& Da
 	{
 		ApplyDamageMomentum(DamageTaken, DamageEvent, PawnInstigator, DamageCauser);
 	}
+
+	// Death anim
+	const FString Section = FString::FromInt(FMath::RandHelper(2));
+	float HitDuration = PlayAnimMontage(HitAnim, 1.0f, FName(*Section));
 
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 	AShooterHUD* MyHUD = MyPC ? Cast<AShooterHUD>(MyPC->GetHUD()) : NULL;
@@ -1757,10 +1761,21 @@ void AShooterCharacter::UpdateRunSounds()
 float AShooterCharacter::PlayAnimMontage(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::PlayAnimMontage( StartSectionName = %s )"), *StartSectionName.ToString());
-	USkeletalMeshComponent* UseMesh = GetPawnMesh();
-	if (AnimMontage && UseMesh && UseMesh->AnimScriptInstance)
+	//USkeletalMeshComponent* UseMesh = GetPawnMesh();
+	UAnimInstance * AnimInstance = (GetPawnMesh()) ? GetPawnMesh()->GetAnimInstance() : nullptr;
+	if (AnimMontage && AnimInstance)
 	{
-		return UseMesh->AnimScriptInstance->Montage_Play(AnimMontage, InPlayRate);
+		float const Duration = AnimInstance->Montage_Play(AnimMontage, InPlayRate);
+		if (Duration > 0.f)
+		{
+			// Start at a given Section.
+			if (StartSectionName != NAME_None)
+			{
+				AnimInstance->Montage_JumpToSection(StartSectionName, AnimMontage);
+			}
+
+			return Duration;
+		}
 	}
 
 	return 0.0f;
