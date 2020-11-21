@@ -1,7 +1,6 @@
 # 网络游戏实验示例
----
-    
-&nbsp;&nbsp;&nbsp;&nbsp;示例实现基于Epic官方ShooterGame和ActionRPG两个学习项目融合扩展而成。旨在学习并掌握UE4引擎各模块基于C++的交互工作流程。
+ 
+&nbsp;&nbsp;&nbsp;&nbsp;示例实现基于Epic官方ShooterGame和ActionRPG两个学习项目融合扩展。旨在学习并掌握UE4引擎各模块基于C++的交互工作流程。
 Engine版本：UE 4.20.3
 <a href="https://www.bilibili.com/video/BV1cz4y1o79a"> 示例视频链接</a>  
 
@@ -15,6 +14,7 @@ Engine版本：UE 4.20.3
 ##  GamePlay
 
 ####  数据:
+
 - **DataAsset/DataTable(CSV)：** 
 
 ####  UI:
@@ -26,7 +26,7 @@ Engine版本：UE 4.20.3
 - **计分板：**  团队角色计分一览。
 - **小地图：** 
 
-####  道具:
+####  Props:
 
 - **Armor：** 
 - **Weapon：** 
@@ -34,20 +34,33 @@ Engine版本：UE 4.20.3
 - **Pickup：** 
 - **Pawn：** 
 
-####  角色:
+####  Character:
 
 - **角色：** 
 - **状态机：** 
+- **目标：** 
 - **攻击/伤害：** 
 
-####  网络:
+####  AsyncTask:
+
+&nbsp;&nbsp;&nbsp;&nbsp;.
+
+####  GameMode:
+
+&nbsp;&nbsp;&nbsp;&nbsp;.
+
+####  NewWork:
 
 - **RPC：** 
 - **Replication：** 
 
 ##  OnlineBecons
 
-##  插件化
+&nbsp;&nbsp;&nbsp;&nbsp;.
+
+##  插件化 
+
+&nbsp;&nbsp;&nbsp;&nbsp;.
 
 
 
