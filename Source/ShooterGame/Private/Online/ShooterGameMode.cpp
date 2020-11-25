@@ -145,6 +145,13 @@ void AShooterGameMode::DefaultTimer()
 		{
 			MyGameState->RemainingTime--;
 
+			// Send end round events
+			for (FConstControllerIterator It = GetWorld()->GetControllerIterator(); It; ++It)
+			{
+				AShooterPlayerController* PlayerController = Cast<AShooterPlayerController>(*It);
+
+
+			}
 			if (MyGameState->RemainingTime <= 0)
 			{
 				if (GetMatchState() == MatchState::WaitingPostMatch)

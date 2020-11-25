@@ -25,6 +25,7 @@ AShooterHUD::AShooterHUD(const FObjectInitializer& ObjectInitializer) : Super(Ob
 {
 	bMessageVisible = false;
 	TipDeltaTime = 5;
+	RespawnDelay = 0.f;
 	NoAmmoFadeOutTime =  1.0f;
 	HitNotifyDisplayTime = 0.75f;
 	KillFadeOutTime = 2.0f;
@@ -389,11 +390,12 @@ void AShooterHUD::DrawMatchTimerAndPosition()
 	Canvas->SetDrawColor(FColor::White);
 	const float TimerPosX = Canvas->ClipX - Canvas->OrgX - (TimePlaceBg.UL + Offset) * ScaleUI;
 	const float TimerPosY = Canvas->OrgY + Offset * ScaleUI;
+	/*
 	if (MyGameState && MatchState == EShooterMatchState::Playing)
 	{
 		Canvas->DrawIcon(TimePlaceBg, TimerPosX, TimerPosY,	ScaleUI);
 		Canvas->DrawIcon(TimerIcon, TimerPosX + Offset * ScaleUI, TimerPosY + ((TimePlaceBg.VL - TimerIcon.VL ) / 2) * ScaleUI, ScaleUI);
-	}
+	}*/
 	// match timer
 	if (MyGameState && MyGameState->RemainingTime > 0)
 	{
@@ -421,7 +423,11 @@ void AShooterHUD::DrawMatchTimerAndPosition()
 			TextItem.Text = FText::FromString( Text );
 			TextItem.Position = FVector2D( TimerPosX + Offset * 1.5f * ScaleUI + TimerIcon.UL * ScaleUI,
 				TimerPosY + (TimePlaceBg.VL * ScaleUI - SizeY * TextScale * ScaleUI) / 2 );
-			Canvas->DrawItem(TextItem);
+			//Canvas->DrawItem(TextItem); 
+			if (Teambar)
+			{
+				Teambar->SetGameTime(FText::FromString(Text));
+			}
 		}
 
 		float BoxWidth = 45.0f * ScaleUI;
@@ -442,6 +448,17 @@ void AShooterHUD::DrawMatchTimerAndPosition()
 							MyGameState->TeamScores[MyTeam] >= MyGameState->TeamScores[i] && MyTeam != i)
 						{
 							MyPos--;
+						}
+						if (Teambar)
+						{
+							if (MyTeam == i)
+							{
+								Teambar->SetOwnerScore(FText::AsNumber(MyGameState->TeamScores[MyTeam]));
+							}
+							else
+							{
+								Teambar->SetTargetScore(FText::AsNumber(MyGameState->TeamScores[i]));
+							}
 						}
 					}
 					int32 NumTeams = 0;
@@ -465,15 +482,12 @@ void AShooterHUD::DrawMatchTimerAndPosition()
 					Text = FString::Printf(TEXT("%d/%d"), MyPos, PlayerStateMap.Num());
 				}
 				Canvas->StrLen(BigFont, Text, SizeX, SizeY);
-				Canvas->DrawIcon(PlaceIcon,
-					Canvas->ClipX - Canvas->OrgX - BoxWidth  - (SizeX * TextScale + PlaceIcon.UL + Offset/4) * ScaleUI,
-					TimerPosY + (TimePlaceBg.VL - PlaceIcon.VL) / 2.0f * ScaleUI, ScaleUI);
+				//Canvas->DrawIcon(PlaceIcon, Canvas->ClipX - Canvas->OrgX - BoxWidth  - (SizeX * TextScale + PlaceIcon.UL + Offset/4) * ScaleUI, TimerPosY + (TimePlaceBg.VL - PlaceIcon.VL) / 2.0f * ScaleUI, ScaleUI);
 
 				TextItem.Text = FText::FromString( Text);
 				TextItem.Scale = FVector2D(TextScale*ScaleUI, TextScale*ScaleUI);
 				TextItem.FontRenderInfo = ShadowedFont;
-				Canvas->DrawItem( TextItem, Canvas->ClipX - Canvas->OrgX - (BoxWidth  + SizeX * TextScale * ScaleUI),
-					TimerPosY + (TimePlaceBg.VL * ScaleUI - SizeY * TextScale * ScaleUI) / 2 );
+				//Canvas->DrawItem( TextItem, Canvas->ClipX - Canvas->OrgX - (BoxWidth  + SizeX * TextScale * ScaleUI), TimerPosY + (TimePlaceBg.VL * ScaleUI - SizeY * TextScale * ScaleUI) / 2 );
 			}
 		}
 	}
@@ -570,8 +584,9 @@ void AShooterHUD::DrawHUD()
 	float TextScale = 1.0f;
 	// enforce min
 	ScaleUI = FMath::Max(ScaleUI, MinHudScale);
-	
-	AShooterCharacter* MyPawn = Cast<AShooterCharacter>(GetOwningPawn());
+
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(PlayerOwner);
+	AShooterCharacter* MyPawn = Cast<AShooterCharacter>(MyPC->GetPawn());
 	if (MyPawn && MyPawn->IsAlive() && MyPawn->GetHealth() < MyPawn->GetMaxHealth() * MyPawn->GetLowHealthPercentage())
 	{
 		const float AnimSpeedModifier = 1.0f + 5.0f * (1.0f - MyPawn->GetHealth()/(MyPawn->GetMaxHealth() * MyPawn->GetLowHealthPercentage()));
@@ -621,7 +636,6 @@ void AShooterHUD::DrawHUD()
 	float MessageOffset = (Canvas->ClipY / 4.0)* ScaleUI;
 	if (MatchState == EShooterMatchState::Playing)
 	{
-		AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(PlayerOwner);
 		if (MyPC)
 		{
 			DrawKills();
@@ -634,14 +648,15 @@ void AShooterHUD::DrawHUD()
 		else
 		{
 			// respawn
-			FString Text = LOCTEXT("WaitingForRespawn", "WAIT FOR RESPAWN").ToString() + FString::FromInt(MyPC->GetMinRespawnDelay());
+			FString Text = LOCTEXT("WaitingForRespawn", "WAIT FOR RESPAWN").ToString() + FString::FromInt(MyPC->GetCurrentRespawnDelay());
 			FCanvasTextItem TextItem( FVector2D::ZeroVector, FText::GetEmpty(), BigFont, HUDDark );
 			TextItem.EnableShadow( FLinearColor::Black );
 			TextItem.Text = FText::FromString( Text );
 			TextItem.Scale = FVector2D( TextScale * ScaleUI, TextScale * ScaleUI );
 			TextItem.FontRenderInfo = ShadowedFont;
 			TextItem.SetColor(HUDLight);
-			AddMatchInfoString(TextItem);
+			AddMatchInfoString(TextItem); 
+
 		}
 		RefreshAbilityWidget(0.f, 0.f, 0.f);
 		DrawDeathMessages();
@@ -1005,13 +1020,20 @@ void AShooterHUD::RefreshAbilityWidget(float InHealth, float InMaxHealth, float 
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(PlayerOwner);
 	if (MyPC && PlayerDashboard)
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("HUD::RespawnDelay=%d"), MyPC->GetMinRespawnDelay()));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("HUD::RespawnDelay=%d"), MyPC->GetCurrentRespawnDelay()));
 		AShooterPlayerState* MyPlayerState = Cast<AShooterPlayerState>(MyPC->PlayerState);
 		if (MyPlayerState)
 		{
+			float DelayTime = MyPC->GetCurrentRespawnDelay();
+			FNumberFormattingOptions NumberFormatOptions;
+			NumberFormatOptions.MinimumFractionalDigits = 1;
+			NumberFormatOptions.MaximumFractionalDigits = 1;
+
+			//return FText::AsNumber(DelayTime, &NumberFormatOptions);
+			FText TimeStr = DelayTime < 1 ? FText::AsNumber(FMath::Abs(DelayTime), &NumberFormatOptions) : FText::AsNumber((int32)DelayTime);
 			PlayerDashboard->GetAbilityWidget()->UpdateHPWidget(MyPlayerState->GetHealth(), MyPlayerState->GetMaxHealth(), MyPlayerState->GetRestoreHealth());
 			PlayerDashboard->GetAbilityWidget()->UpdateMPWidget(MyPlayerState->GetMana(), MyPlayerState->GetMaxMana(), MyPlayerState->GetRestoreMana());
-			PlayerDashboard->GetPhotoWidget()->UpdatePlayerPhoto(MyPlayerState->GetHealth() > 0, FText::AsNumber(MyPC->GetMinRespawnDelay()), FText::AsNumber(MyPlayerState->GetCharacterLevel()));
+			PlayerDashboard->GetPhotoWidget()->UpdatePlayerPhoto(MyPlayerState->GetHealth() > 0, TimeStr, FText::AsNumber(MyPlayerState->GetCharacterLevel()));
 		}
 	}
 }

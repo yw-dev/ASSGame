@@ -123,14 +123,14 @@ public:
 	*
 	* @param Weapon	Weapon to add.
 	*/
-	void AddWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon);
+	void AddWeapon(const FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon);
 
 	/**
 	* [server] remove weapon from inventory
 	*
 	* @param Weapon	Weapon to remove.
 	*/
-	void RemoveWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon);
+	void RemoveWeapon(const FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon);
 
 	/**
 	* Find in inventory
@@ -693,11 +693,6 @@ public:
 	bool UpdateInventoryActors(class UShooterItem* NewItem, bool bAdd);
 
 	/** [server] spawns Player Inventory Props (生成道具实例) */
-
-	UFUNCTION(BlueprintCallable)
-	void SpawnPropsActors();
-
-	/** [server] spawns Player Inventory Props (生成道具实例) */
 	void SpawnInventoryActor(UShooterItem* NewItem);
 
 	/** [server] spawns Player Inventory Props (移除道具实例) */
@@ -785,6 +780,11 @@ protected:
 	// Safe to call many times because it checks to make sure it only executes once.
 	UFUNCTION()
 	void InitializePlayerStatusBar();
+
+	/** [server] spawns Player Inventory Props (生成道具实例) */
+	UFUNCTION(BlueprintCallable)
+	void InitializePlayerInventoryActors();
+
 
 public:
 	virtual void UnPossessed() override;

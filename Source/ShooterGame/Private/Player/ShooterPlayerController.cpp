@@ -81,7 +81,7 @@ AShooterPlayerController::AShooterPlayerController(const FObjectInitializer& Obj
 	bHasSentStartEvents = false;
 
 	bStoreVisible = false;
-
+	CurrentRespawnDelay = 0.f;
 	StatMatchesPlayed = 0;
 	StatKills = 0;
 	StatDeaths = 0;
@@ -151,7 +151,10 @@ void AShooterPlayerController::ClearLeaderboardDelegate()
 void AShooterPlayerController::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
 {
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-
+	if (CurrentRespawnDelay)
+	{
+		CurrentRespawnDelay -= DeltaTime;
+	}
 	if (IsGameMenuVisible())
 	{
 		if (ShooterFriendUpdateTimer > 0)
@@ -363,7 +366,21 @@ void AShooterPlayerController::QueryStats()
 
 void AShooterPlayerController::UnFreeze()
 {
-	ServerRestartPlayer();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("Controller::UnFreeze(CurrentDelay=%f, MinDelay=%f)"), GetCurrentRespawnDelay(), GetMinRespawnDelay()));
+	if (CurrentRespawnDelay > 0)
+	{
+		CurrentRespawnDelay--;
+	}
+	else
+	{
+		ServerRestartPlayer();
+	}
+}
+
+void AShooterPlayerController::BeginInactiveState()
+{
+	CurrentRespawnDelay = GetMinRespawnDelay();
+	Super::BeginInactiveState();
 }
 
 void AShooterPlayerController::FailedToSpawnPawn()
@@ -720,6 +737,11 @@ void AShooterPlayerController::SetHealthRegen(bool bEnable)
 	bHealthRegen = bEnable;
 }
 
+void AShooterPlayerController::SetRespawnDelay(float InDelay)
+{
+	CurrentRespawnDelay = InDelay;
+}
+
 void AShooterPlayerController::SetGodMode(bool bEnable)
 {
 	bGodMode = bEnable;
@@ -1063,6 +1085,10 @@ void AShooterPlayerController::GetLifetimeReplicatedProps( TArray< FLifetimeProp
 	DOREPLIFETIME_CONDITION(AShooterPlayerController, bInfiniteAmmo, COND_OwnerOnly );
 	DOREPLIFETIME_CONDITION(AShooterPlayerController, bInfiniteClip, COND_OwnerOnly );
 
+	DOREPLIFETIME(AShooterPlayerController, bHealthRegen);
+	DOREPLIFETIME(AShooterPlayerController, bGodMode);
+	DOREPLIFETIME(AShooterPlayerController, CurrentRespawnDelay);
+
 }
 /*
 void AShooterPlayerController::OnRep_PurchaseItem(UShooterItem* NewPurchaseItem)
@@ -1304,6 +1330,11 @@ bool AShooterPlayerController::HasInfiniteClip() const
 bool AShooterPlayerController::HasHealthRegen() const
 {
 	return bHealthRegen;
+}
+
+float AShooterPlayerController::GetCurrentRespawnDelay() const
+{
+	return CurrentRespawnDelay;
 }
 
 bool AShooterPlayerController::HasGodMode() const

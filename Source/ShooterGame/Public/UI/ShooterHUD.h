@@ -431,6 +431,8 @@ private:
 
 	int32 TipDeltaTime;
 
+	float RespawnDelay;
+
 	uint8 bMessageVisible : 1;
 
 	void ShowTipMessage();

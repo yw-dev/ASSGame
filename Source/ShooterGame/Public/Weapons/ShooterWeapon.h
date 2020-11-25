@@ -98,7 +98,7 @@ public:
 	// Inventory
 
 	/** weapon is being equipped by owner pawn */
-	virtual void OnEquip(AActor* LastWeapon) override;
+	virtual void OnEquip(const AShooterWeaponBase* LastWeapon) override;
 
 	/** weapon is now equipped by owner pawn */
 	virtual void OnEquipFinished();

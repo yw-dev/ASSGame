@@ -148,7 +148,7 @@ public:
 	// Inventory
 
 	/** weapon is being equipped by owner pawn */
-	virtual void OnEquip(AActor* LastWeapon) override;
+	virtual void OnEquip(const AShooterWeaponBase* LastWeapon) override;
 
 	/** weapon is now equipped by owner pawn */
 	virtual void OnEquipFinished() override;
@@ -159,10 +159,10 @@ public:
 	/** [server] weapon was removed from pawn's inventory */
 	virtual void OnLeaveInventory() override;
 
-	void AttachActorToPawn(AActor* Weapon, FName AttachPoint);
+	void AttachActorToPawn(const AShooterWeaponBase* Weapon, FName AttachPoint);
 
 	/** attaches weapon mesh to pawn's mesh Back*/
-	virtual void AttachMeshToPawn() override;
+	//virtual void AttachMeshToPawn() override;
 
 	/** attaches weapon mesh to pawn's mesh Backside*/
 	virtual void AttachMeshToPawnBackside() override;

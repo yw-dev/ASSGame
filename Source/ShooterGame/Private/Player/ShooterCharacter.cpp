@@ -126,6 +126,7 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	GetCharacterMovement()->AirControl = 0.2f;
 
 	// some params or flag default value
+	WaponEquips.Reset();
 	CharacterLevel = 1;
 	bReplicates = true;
 	bAbilitiesInitialized = false;
@@ -205,7 +206,7 @@ void AShooterCharacter::PawnClientRestart()
 	UpdatePawnMeshes();
 
 	// reattach weapon if needed
-	SetCurrentWeapon(CurrentWeapon);
+	EquipWeapon(CurrentWeapon);
 
 	// set team colors for 1st person view
 	//UMaterialInstanceDynamic* Mesh1PMID = Mesh1P->CreateAndSetMaterialInstanceDynamic(0);
@@ -953,9 +954,9 @@ bool AShooterCharacter::UpdateInventoryActors(class UShooterItem* NewItem, bool 
 	return true;
 }
 
-void AShooterCharacter::SpawnPropsActors()
+void AShooterCharacter::InitializePlayerInventoryActors()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Character::SpawnPropsActors()"));
+	UE_LOG(LogTemp, Warning, TEXT("Character::InitializePlayerInventoryActors()"));
 	if (!HasAuthority())
 	{
 		return;
@@ -964,7 +965,7 @@ void AShooterCharacter::SpawnPropsActors()
 	AShooterPlayerController* PC = Cast<AShooterPlayerController>(Controller);
 
 	const TMap<FShooterItemSlot, UShooterItem*>& SlottedItems = PC->GetSlottedItemMap();
-	UE_LOG(LogTemp, Warning, TEXT("Character::SpawnPropsActors( SlottedItems：%d)"), SlottedItems.Num());
+	UE_LOG(LogTemp, Warning, TEXT("Character::InitializePlayerInventoryActors( SlottedItems：%d)"), SlottedItems.Num());
 	for (const TPair<FShooterItemSlot, UShooterItem*>& Pair : SlottedItems)
 	{
 		if (Pair.Value)
@@ -1183,7 +1184,7 @@ void AShooterCharacter::DestroyInventory()
 	//InventoryItems.Empty();
 }
 
-void AShooterCharacter::AddWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon)
+void AShooterCharacter::AddWeapon(const FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::AddWeapon()"));
 	/*
@@ -1207,6 +1208,7 @@ void AShooterCharacter::AddWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase*
 		Weapon->OnEnterInventory(this);
 		InventoryItems.Emplace(ItemSlot, Weapon);
 		WaponEquips.Add(Weapon);
+		UE_LOG(LogTemp, Warning, TEXT("Has Authority."));
 	}
 	else
 	{
@@ -1215,7 +1217,7 @@ void AShooterCharacter::AddWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase*
 	}
 }
 
-void AShooterCharacter::RemoveWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon)
+void AShooterCharacter::RemoveWeapon(const FShooterItemSlot ItemSlot, AShooterWeaponBase* Weapon)
 {
 	/*
 	switch (Role)
@@ -1247,7 +1249,7 @@ void AShooterCharacter::RemoveWeapon(FShooterItemSlot ItemSlot, AShooterWeaponBa
 	}
 }
 
-void AShooterCharacter::EquipWeapon(AShooterWeaponBase* Weapon)
+void AShooterCharacter::EquipWeapon(AShooterWeaponBase* NewWeapon)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Character::EquipWeapon()"));
 	/*
@@ -1266,17 +1268,18 @@ void AShooterCharacter::EquipWeapon(AShooterWeaponBase* Weapon)
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("On  ROLE_None"));
 		break;
 	}*/
-	if (Weapon)
+	if (NewWeapon)
 	{
 		if (HasAuthority())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Character::EquipWeapon((Role == ROLE_Authority) -> SetCurrentWeapon())"));
-			SetCurrentWeapon(Weapon, CurrentWeapon);
+			SetCurrentWeapon(NewWeapon, CurrentWeapon);
+			//SetStandbyWeapon(Weapon);
 		}
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("(Role != ROLE_Authority) ->ServerEquipWeapon()"));
-			ServerEquipWeapon(Weapon);
+			ServerEquipWeapon(NewWeapon);
 		}
 	}
 }
@@ -1333,9 +1336,9 @@ void AShooterCharacter::OnRep_StandbyWeapon(AShooterWeaponBase* NewWeapon)
 
 void AShooterCharacter::SetStandbyWeapon(class AShooterWeaponBase* NewWeapon)
 {
-	if (StandbyWeapon != nullptr)
+	if (!NewWeapon)
 	{
-		StandbyWeapon = nullptr;
+		return;
 	}
 	StandbyWeapon = NewWeapon;
 	NotifyStandbyWeaponChange.Broadcast(this, NewWeapon);
@@ -1380,12 +1383,12 @@ void AShooterCharacter::SetCurrentWeapon(AShooterWeaponBase* NewWeapon, AShooter
 	if (LastWeapon != NULL)
 	{
 		LocalLastWeapon = LastWeapon;
-		SetStandbyWeapon(LastWeapon);
+		//SetStandbyWeapon(LocalLastWeapon);
 	}
-	else if (NewWeapon != CurrentWeapon)
+	else if (CurrentWeapon != NULL && NewWeapon != CurrentWeapon)
 	{
 		LocalLastWeapon = CurrentWeapon;
-		SetStandbyWeapon(CurrentWeapon);
+		//SetStandbyWeapon(LocalLastWeapon);
 	}
 
 	// unequip previous
@@ -1395,19 +1398,17 @@ void AShooterCharacter::SetCurrentWeapon(AShooterWeaponBase* NewWeapon, AShooter
 	}
 
 	CurrentWeapon = NewWeapon;
+	SetStandbyWeapon(LastWeapon);
 	// equip new one
 	if (NewWeapon)
 	{
 		NewWeapon->SetOwningPawn(this);	// Make sure weapon's MyPawn is pointing back to us. During replication, we can't guarantee APawn::CurrentWeapon will rep after AWeapon::MyPawn!
 
-		NewWeapon->OnEquip(LastWeapon);
+		NewWeapon->OnEquip(LastWeapon); 
 	}
-	GetInventoryItemSlot(CurrentWeapon, CurrentWeaponSlot);
-	//ActivateWeaponSlot = FShooterItemSlot(UShooterAssetManager::WeaponItemType, GetInventoryItem(CurrentWeapon));
-	//UE_LOG(LogTemp, Warning, TEXT("GetActiveWeaponType() = %u"), (uint32)CurrentWeapon->GetActiveWeaponType());
-	//SetActiveType(CurrentWeapon->GetActiveWeaponType());
-	NotifyCurrentWeaponChange.Broadcast(this, CurrentWeapon, LocalLastWeapon);
 	SetCurrentWeaponType(CurrentWeapon->GetCurrentWeaponType());
+	GetInventoryItemSlot(CurrentWeapon, CurrentWeaponSlot);
+	NotifyCurrentWeaponChange.Broadcast(this, CurrentWeapon, LocalLastWeapon);
 }
 
 /*
@@ -2239,6 +2240,7 @@ void AShooterCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > &
 	// everyone
 	DOREPLIFETIME(AShooterCharacter, WaponEquips);
 	DOREPLIFETIME(AShooterCharacter, CurrentWeapon);
+	DOREPLIFETIME(AShooterCharacter, StandbyWeapon);
 	DOREPLIFETIME(AShooterCharacter, CurrentWeaponType);
 	DOREPLIFETIME(AShooterCharacter, Health);
 }
@@ -2571,43 +2573,15 @@ void AShooterCharacter::PossessedBy(AController* NewController)
 	AShooterPlayerController* PC = Cast<AShooterPlayerController>(NewController);
 	const TMap<FShooterItemSlot, UShooterItem*>& SlottedItems = PC->GetSlottedItemMap();
 	PC->SetHealthRegen(true);
-	UE_LOG(LogTemp, Warning, TEXT("Character::SpawnPropsActors(  PC->SlottedItems：%d)"), SlottedItems.Num());
+	UE_LOG(LogTemp, Warning, TEXT("Character::InitializePlayerInventoryActors(  PC->SlottedItems：%d)"), SlottedItems.Num());
 
 	// [server] as soon as PlayerState is assigned, set team colors of this pawn for local player
 	UpdateTeamColorsAllMIDs();
 	// status bar widget component.
 	InitializePlayerStatusBar();
-	// 道具
-	SpawnPropsActors();
-	//InventoryItems.Reset();
-	/*
-	for (const TPair<FShooterItemSlot, UShooterItem*>& Pair : PC->GetSlottedItemMap())
-	{
-		if (Pair.Value)
-		{
-			FPrimaryAssetId AssetId = Pair.Value->GetPrimaryAssetId();
+	// Inventory道具
+	InitializePlayerInventoryActors();
 
-			if (AssetId.PrimaryAssetType == UShooterAssetManager::WeaponItemType)
-			{
-				//Items.Add(Pair.Key);
-				UShooterWeaponItem* WeaponItem = Cast<UShooterWeaponItem>(Pair.Value);
-
-				FActorSpawnParameters SpawnInfo;
-				SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-				AShooterWeaponBase* NewWeapon = UShooterBlueprintLibrary::SpawnActor<AShooterWeaponBase>(GetWorld(), WeaponItem->WeaponActor, SpawnInfo);
-				AddWeapon(Pair.Key, NewWeapon);
-				EquipWeapon(NewWeapon);
-			}
-		}
-	}*/
-	
-	// Initialize our abilities
-	/*if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		AbilitySystemComponent->RefreshAbilityActorInfo();
-		AddStartupGameplayAbilities();
-	}*/
 }
 
 void AShooterCharacter::UnPossessed()

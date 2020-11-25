@@ -135,6 +135,9 @@ public:
 	/** set health regen cheat */
 	void SetHealthRegen(bool bEnable);
 
+	/** set Respawn time */
+	void SetRespawnDelay(float InDelay);
+
 	/** set god mode cheat */
 	UFUNCTION(exec)
 	void SetGodMode(bool bEnable);
@@ -153,6 +156,9 @@ public:
 
 	/** get gode mode cheat */
 	bool HasGodMode() const;
+
+	/** get Current Respawn time */
+	float GetCurrentRespawnDelay() const;
 
 	/** should produce force feedback? */
 	bool IsVibrationEnabled() const;
@@ -260,6 +266,10 @@ protected:
 	UPROPERTY(Transient, Replicated)
 	uint8 bGodMode : 1;
 
+	/** Pawn Respawn time */
+	UPROPERTY(Transient, Replicated)
+	float CurrentRespawnDelay;
+
 	/** should produce force feedback? */
 	uint8 bIsVibrationEnabled : 1;
 
@@ -307,7 +317,9 @@ public:
 	//End AActor interface
 
 	//Begin AController interface
-	
+
+	virtual void BeginInactiveState() override;
+
 	/** transition to dead state, retries spawning later */
 	virtual void FailedToSpawnPawn() override;
 	

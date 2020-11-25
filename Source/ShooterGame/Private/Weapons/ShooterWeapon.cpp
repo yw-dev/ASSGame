@@ -91,7 +91,7 @@ void AShooterWeapon::Destroyed()
 //////////////////////////////////////////////////////////////////////////
 // Inventory
 
-void AShooterWeapon::OnEquip(AActor* LastWeapon)
+void AShooterWeapon::OnEquip(const AShooterWeaponBase* LastWeapon)
 {
 	AttachMeshToPawn();
 

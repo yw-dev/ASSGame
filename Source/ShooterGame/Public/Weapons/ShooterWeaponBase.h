@@ -339,7 +339,7 @@ public:
 	virtual void StopFire();
 
 	/** weapon is being equipped by owner pawn */
-	virtual void OnEquip(AActor* LastWeapon);
+	virtual void OnEquip(const AShooterWeaponBase* LastWeapon);
 
 	/** weapon is now equipped by owner pawn */
 	virtual void OnEquipFinished();

@@ -326,6 +326,7 @@ void AShooterWeapon_Sword::EndWeaponAttack_Implementation()
 void AShooterWeapon_Sword::OnOverlapBegin(class UPrimitiveComponent* Actor, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Weapon_Sword::OnOverlapBegin()"));
+	/*
 	if (this->GetInstigator()->GetClass() != OtherActor->GetClass() && IsAttacking == true)
 	{
 		//this->GetInstigator();
@@ -334,18 +335,20 @@ void AShooterWeapon_Sword::OnOverlapBegin(class UPrimitiveComponent* Actor, clas
 		EventData.Target = OtherActor;
 		FGameplayTag EventTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Event.Montage.Shared.WeaponHit"));
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetInstigator(), EventTag, EventData);
-	}
+	}*/
 	
 }
 
 void AShooterWeapon_Sword::OnOverlapEnd(class UPrimitiveComponent* Actor, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Weapon_Sword::OnOverlapEnd()"));
+	/*
 	FGameplayEventData EventData;
 	EventData.Instigator = GetInstigator();
 	EventData.Target = OtherActor;
 	FGameplayTag EventTag = UShooterBlueprintLibrary::GetGameplayTag(TEXT("Event.Montage.Shared.WeaponHit"));
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetInstigator(), EventTag, EventData);
+	*/
 }
 
 //////////////////////////////////////////////////////////////////////////

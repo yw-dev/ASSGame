@@ -131,9 +131,8 @@ void AShooterWeaponBase::OnEquipFinished()
 }
 
 /** weapon is holstered by owner pawn */
-void AShooterWeaponBase::OnEquip(AActor* LastWeapon)
+void AShooterWeaponBase::OnEquip(const AShooterWeaponBase* LastWeapon)
 {
-
 }
 
 /** weapon is holstered by owner pawn */
@@ -372,7 +371,7 @@ void AShooterWeaponBase::AttachMeshToPawn()
 			//USkeletalMeshComponent* PawnMesh1p = MyPawn->GetSpecifcPawnMesh(true);
 			USkeletalMeshComponent* PawnMesh3p = MyPawn->GetSpecifcPawnMesh(false);
 			//GetMesh1P()->SetHiddenInGame(true);
-			GetMesh3P()->SetHiddenInGame(false);
+			//GetMesh3P()->SetHiddenInGame(false);
 			//GetMesh1P()->AttachToComponent(PawnMesh1p, FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
 			GetMesh3P()->AttachToComponent(PawnMesh3p, FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
 		}
@@ -382,7 +381,7 @@ void AShooterWeaponBase::AttachMeshToPawn()
 			USkeletalMeshComponent* UseWeaponMesh = GetWeaponMesh();
 			USkeletalMeshComponent* UsePawnMesh = MyPawn->GetPawnMesh();
 			UseWeaponMesh->AttachToComponent(UsePawnMesh, FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
-			UseWeaponMesh->SetHiddenInGame(false);
+			//UseWeaponMesh->SetHiddenInGame(false);
 		}
 	}
 }
@@ -403,7 +402,7 @@ void AShooterWeaponBase::AttachMeshToPawnBackside()
 			//USkeletalMeshComponent* PawnMesh1p = MyPawn->GetSpecifcPawnMesh(true);
 			USkeletalMeshComponent* PawnMesh3p = MyPawn->GetSpecifcPawnMesh(false);
 			//GetMesh1P()->SetHiddenInGame(true);
-			GetMesh3P()->SetHiddenInGame(false);
+			//GetMesh3P()->SetHiddenInGame(false);
 			//GetMesh1P()->AttachToComponent(PawnMesh1p, FAttachmentTransformRules::KeepRelativeTransform, BacksidePoint);
 			GetMesh3P()->AttachToComponent(PawnMesh3p, FAttachmentTransformRules::KeepRelativeTransform, BacksidePoint);
 		}
@@ -413,7 +412,7 @@ void AShooterWeaponBase::AttachMeshToPawnBackside()
 			USkeletalMeshComponent* UseWeaponMesh = GetWeaponMesh();
 			USkeletalMeshComponent* UsePawnMesh = MyPawn->GetPawnMesh();
 			UseWeaponMesh->AttachToComponent(UsePawnMesh, FAttachmentTransformRules::KeepRelativeTransform, BacksidePoint);
-			UseWeaponMesh->SetHiddenInGame(false);
+			//UseWeaponMesh->SetHiddenInGame(false);
 		}
 	}
 }
@@ -426,7 +425,7 @@ void AShooterWeaponBase::DetachMeshFromPawn()
 	//Mesh1P->SetHiddenInGame(true);
 
 	Mesh3P->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
-	Mesh3P->SetHiddenInGame(true);
+	Mesh3P->SetHiddenInGame(false);
 }
 
 /** check if it's currently equipped */

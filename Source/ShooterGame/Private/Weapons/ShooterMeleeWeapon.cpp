@@ -63,30 +63,25 @@ void AShooterMeleeWeapon::NotifyActorEndOverlap(AActor* OtherActor)
 // Inventory
 
 /** weapon is being equipped by owner pawn */
-void AShooterMeleeWeapon::OnEquip(AActor* LastWeapon)
+void AShooterMeleeWeapon::OnEquip(const AShooterWeaponBase* LastWeapon)
 {
 	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::OnEquip()"));
-	Super::OnEquip(LastWeapon);
-	AttachMeshToPawn();
+	//Super::OnEquip(LastWeapon);
 
+	AttachMeshToPawn();
+	//AttachMeshToPawn(MyPawn->GetSwordAttachPoint());
 	bPendingEquip = true;
 	DetermineWeaponState();
-
 	// Only play animation if last weapon is valid
 	if (LastWeapon && MyPawn)
 	{
-		FName AttachPoint = MyPawn->GetBacksideAttachPoint();
-		UE_LOG(LogTemp, Warning, TEXT("AttachPoint = %s"), *AttachPoint.ToString());
-		AttachActorToPawn(LastWeapon, AttachPoint);
+		AttachActorToPawn(LastWeapon, MyPawn->GetBacksideAttachPoint());
 		float Duration = PlayWeaponAnimation(EquipAnim);
 		if (Duration <= 0.0f)
 		{
 			// fail safe
 			Duration = 0.5f;
 		}
-		EquipStartedTime = GetWorld()->GetTimeSeconds();
-		EquipDuration = Duration;
-
 		GetWorldTimerManager().SetTimer(TimerHandle_OnEquipFinished, this, &AShooterMeleeWeapon::OnEquipFinished, Duration, false);
 	}
 	else
@@ -116,7 +111,19 @@ void AShooterMeleeWeapon::OnEquipFinished()
 /** weapon is holstered by owner pawn */
 void AShooterMeleeWeapon::OnUnEquip()
 {
+	DetachMeshFromPawn();
+	bIsEquipped = false;
+	StopFire();
+	
+	if (bPendingEquip)
+	{
+		StopWeaponAnimation(EquipAnim);
+		bPendingEquip = false;
 
+		GetWorldTimerManager().ClearTimer(TimerHandle_OnEquipFinished);
+	}
+
+	DetermineWeaponState();
 }
 
 /** [server] weapon was removed from pawn's inventory */
@@ -134,32 +141,35 @@ void AShooterMeleeWeapon::OnLeaveInventory()
 	}
 }
 
-void AShooterMeleeWeapon::AttachActorToPawn(AActor* Weapon, FName AttachPoint)
+void AShooterMeleeWeapon::AttachActorToPawn(const AShooterWeaponBase* Weapon, FName AttachPoint)
 {
 	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::AttachActorToPawn()"));
 	// For locally controller players we attach both weapons and let the bOnlyOwnerSee, bOwnerNoSee flags deal with visibility.
-	AShooterMeleeWeapon* MW = Cast<AShooterMeleeWeapon>(Weapon);
+	//AShooterWeaponBase* MW = Cast<AShooterWeaponBase>(Weapon);
 	if (MyPawn && MyPawn->IsLocallyControlled() == true)
 	{
 		//USkeletalMeshComponent* PawnMesh1p = MyPawn->GetSpecifcPawnMesh(true);
-		USkeletalMeshComponent* PawnMesh3p = MyPawn->GetSpecifcPawnMesh(true);
+		//USkeletalMeshComponent* PawnMesh3p = MyPawn->GetSpecifcPawnMesh(true);
 		//GetMesh1P()->SetHiddenInGame(false);
-		MW->GetWeaponMesh()->SetHiddenInGame(false);
+		//Weapon->GetWeaponMesh()->SetHiddenInGame(false);
 		//MW->GetMesh1P()->AttachToComponent(PawnMesh1p, FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
-		MW->GetWeaponMesh()->AttachToComponent(PawnMesh3p, FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
+		Weapon->GetWeaponMesh()->AttachToComponent(MyPawn->GetSpecifcPawnMesh(true), FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
 	}
 	else
 	{
-		USkeletalMeshComponent* UseWeaponMesh = MW->GetWeaponMesh();
-		USkeletalMeshComponent* UsePawnMesh = MyPawn->GetPawnMesh();
-		UseWeaponMesh->AttachToComponent(UsePawnMesh, FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
-		UseWeaponMesh->SetHiddenInGame(false);
+		//USkeletalMeshComponent* UseWeaponMesh = GetWeaponMesh();
+		//USkeletalMeshComponent* UsePawnMesh = MyPawn->GetPawnMesh();
+		Weapon->GetWeaponMesh()->AttachToComponent(MyPawn->GetPawnMesh(), FAttachmentTransformRules::KeepRelativeTransform, AttachPoint);
+		//Weapon->GetWeaponMesh()->SetHiddenInGame(false);
 	}
 }
 
 /** attaches weapon mesh to pawn's mesh */
+/*
 void AShooterMeleeWeapon::AttachMeshToPawn()
 {
+	//Super::AttachMeshToPawn();
+	
 	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::AttachMeshToPawn()"));
 	if (MyPawn)
 	{
@@ -187,10 +197,12 @@ void AShooterMeleeWeapon::AttachMeshToPawn()
 			UseWeaponMesh->SetHiddenInGame(false);
 		}
 	}
-}
+}*/
 
 void AShooterMeleeWeapon::AttachMeshToPawnBackside()
 {
+	Super::AttachMeshToPawnBackside();
+	
 	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::AttachMeshToPawnBackside()"));
 	if (MyPawn)
 	{
@@ -222,10 +234,7 @@ void AShooterMeleeWeapon::AttachMeshToPawnBackside()
 void AShooterMeleeWeapon::DetachMeshFromPawn()
 {
 	UE_LOG(LogTemp, Warning, TEXT("MeleeWeapon::DetachMeshFromPawn()"));
-	//GetMesh1P()->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
-	//GetMesh1P()->SetHiddenInGame(true);
-	GetMesh3P()->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
-	GetMesh3P()->SetHiddenInGame(false);
+	Super::DetachMeshFromPawn();
 }
 
 //////////////////////////////////////////////////////////////////////////

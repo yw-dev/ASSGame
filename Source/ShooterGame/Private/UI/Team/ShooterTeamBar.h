@@ -37,6 +37,32 @@ public:
 	UTextBlock* TargetScoreLabel;
 
 
-	
+	/** Sets the GameTime Text. */
+	UFUNCTION(BlueprintCallable, Category = "TeamBar | Time")
+	void SetGameTime(FText InTime);
+
+	/** Gets the GameTime Text */
+	UFUNCTION(BlueprintCallable, Category = "TeamBar | Time")
+	UTextBlock* GetGameTime() const { return TimeLabel; };
+
+	/** Sets the OwnerScore Text. */
+	UFUNCTION(BlueprintCallable, Category = "TeamBar | OwnerScore")
+	void SetOwnerScore(FText InScore);
+
+	/** Gets the OwnerScore Text */
+	UFUNCTION(BlueprintCallable, Category = "TeamBar | OwnerScore")
+	UTextBlock* GetOwnerScore() const { return OwnerScoreLabel; };
+
+	/** Sets the TargetScore Text. */
+	UFUNCTION(BlueprintCallable, Category = "TeamBar | TargetScore")
+	void SetTargetScore(FText InScore);
+
+	/** Gets the TargetScore Text */
+	UFUNCTION(BlueprintCallable, Category = "TeamBar | TargetScore")
+	UTextBlock* GetTargetScore() const { return TargetScoreLabel; };
+
+	UFUNCTION(BlueprintCallable, Category = "TeamBar | Update")
+	void Update(FString InTime, float InOwnerScore, float InTargetScore);
+
 	
 };
