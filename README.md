@@ -44,7 +44,7 @@ Engine版本：UE 4.20.3
 - **近战攻击/伤害：** AbilitySystemComponent激活攻击的能力，LineTrace/AnimNotify实现近战攻击径向多目标的命中碰撞检测和通知。
 - **远程技能/伤害：**  
 - **等级/晋级：** 
-- **Inventory：** 
+- **Inventory：** 有限数量的Inventory Slots； 固定主/复武器Slots位. 相对数量的护具、药品等。
 
 ####  GameMode:
 
