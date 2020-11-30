@@ -226,7 +226,10 @@ void UShooterGameInstance::InitializeDataSource()
 		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("FPrimaryAssetType::s%"), (TypePair.Key).ToString());
 		UAssetManager::Get().GetPrimaryAssetIdList(TypePair.Key, PrimaryAssetIdList);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("FPrimaryAssetType::%d"), PrimaryAssetIdList.Num()));
-
+		if (PrimaryAssetIdList.Num()<=0)
+		{
+			return;
+		}
 		GameAsset.AssetCategory = PrimaryAssetIdList[0];
 		TSharedPtr<FStreamableHandle> Handle = UAssetManager::Get().LoadPrimaryAssets(PrimaryAssetIdList);
 

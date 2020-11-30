@@ -2139,6 +2139,7 @@ bool AShooterPlayerController::FindStoreAssetsByID(FPrimaryAssetId InAssetId, TA
 
 	if (!GameInstance)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Controller::FindStoreAssetsByID(!GameInstance)"));
 		return false;
 	}
 
@@ -2610,12 +2611,73 @@ void AShooterPlayerController::ShowPlayerTarget()
 
 void AShooterPlayerController::OnToggleStoreboard()
 {
+	UShooterGameInstance* SGI = GetGameInstance() != NULL ? Cast<UShooterGameInstance>(GetWorld()->GetGameInstance()) : NULL;
+
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller::On(NM_DedicatedServer)"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller::On(NM_DedicatedServer)"));
+	}
+	else if (GetNetMode() == NM_Standalone)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller::On(NM_Standalone)"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller::On(NM_Standalone)"));
+	}
+	else if (GetNetMode() == NM_ListenServer)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller::On(NM_ListenServer)"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller::On(NM_ListenServer)"));
+	}
+	else if (GetNetMode() == NM_Client)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller::On(NM_Client)"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller::On(NM_Client)"));
+	}
+
+	if (SGI && (SGI->GetOnlineMode() == EOnlineMode::Online))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller  Online"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller  Online"));
+	}
+	else if (SGI->GetOnlineMode() == EOnlineMode::LAN)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller  LAN"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller  LAN"));
+	}
+	else if (SGI->GetOnlineMode() == EOnlineMode::Offline)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller  Offline"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller  Offline"));
+	}
+	switch (Role)
+	{
+	case ENetRole::ROLE_Authority:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller On  ROLE_Authority"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller On  ROLE_Authority"));
+		break;
+	case ENetRole::ROLE_AutonomousProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller On  ROLE_AutonomousProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller On  ROLE_AutonomousProxy"));
+		break;
+	case ENetRole::ROLE_SimulatedProxy:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller On  ROLE_SimulatedProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller On  ROLE_SimulatedProxy"));
+		break;
+	default:
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Controller On  ROLE_None"));
+		UE_LOG(LogTemp, Warning, TEXT("Controller On  ROLE_None"));
+		break;
+	}
 	if (StoreWidgetClass && !bStoreVisible)
 	{
 		TArray<UShooterItem*> FindItems;
 		TArray<UShooterItem*> ContentItems;
 		FPrimaryAssetId AssetId = FPrimaryAssetId(UShooterAssetManager::CategoryItemType, UShooterAssetManager::CategoryItemType.GetName());
 		FindStoreAssetsByID(AssetId, FindItems);
+		if (FindItems.Num()<=0)
+		{
+			return;
+		}
 		UShooterCategoryItem* CategoryItem = Cast<UShooterCategoryItem>(FindItems[0]);
 		FPrimaryAssetId CategoryId = FPrimaryAssetId(CategoryItem->Category.Type, CategoryItem->Category.Type.GetName());
 		FindStoreAssetsByID(CategoryId, ContentItems);

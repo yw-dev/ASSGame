@@ -562,19 +562,20 @@ void AShooterCharacterBase::DoSkillAttack()
 
 float AShooterCharacterBase::GetHealth() const
 {
+	/*
 	switch (Role)
 	{
 	case ENetRole::ROLE_Authority:
-		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_Authority"));
+		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::ROLE_Authority"));
 		break;
 	case ENetRole::ROLE_AutonomousProxy:
-		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_AutonomousProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::ROLE_AutonomousProxy"));
 		break;
 	case ENetRole::ROLE_SimulatedProxy:
-		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_SimulatedProxy"));
+		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::ROLE_SimulatedProxy"));
 		break;
 	default:
-		UE_LOG(LogTemp, Warning, TEXT("Character::ROLE_None"));
+		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::ROLE_None"));
 		break;
 	}
 	AShooterPlayerState* PS = Cast<AShooterPlayerState>(PlayerState);
@@ -583,7 +584,7 @@ float AShooterCharacterBase::GetHealth() const
 		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::GetHealth( NikeName = %s)"), *PS->GetShortPlayerName());
 		UE_LOG(LogTemp, Warning, TEXT("CharacterBase::GetHealth(PS.Health = %f"), PS->GetHealth());
 	}
-	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::GetHealth() = %f"), AttributeSetBase->GetHealth());
+	UE_LOG(LogTemp, Warning, TEXT("CharacterBase::GetHealth() = %f"), AttributeSetBase->GetHealth());*/
 	return AttributeSetBase->GetHealth();
 }
 

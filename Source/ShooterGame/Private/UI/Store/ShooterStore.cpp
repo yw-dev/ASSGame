@@ -67,7 +67,7 @@ void UShooterStore::FindContentItem(UShooterItem* InItems, TArray<UShooterItem*>
 	UShooterCategoryItem* CategoryItem = Cast<UShooterCategoryItem>(InItems);
 	FPrimaryAssetId AssetId = FPrimaryAssetId(CategoryItem->Category.Type, CategoryItem->Category.Type.GetName());
 
-	UE_LOG(LogTemp, Warning, TEXT("UShooterStore::FindContentItem( %s )"), *FString::Printf(TEXT("Item = %s"), *CategoryItem->ItemName.ToString()));
+	//UE_LOG(LogTemp, Warning, TEXT("UShooterStore::FindContentItem( %s )"), *FString::Printf(TEXT("Item = %s"), *CategoryItem->ItemName.ToString()));
 	PC->FindStoreAssetsByID(AssetId, OutItems);
 }
 
@@ -110,7 +110,7 @@ void UShooterStore::OnContentItemSelected(UObject* Item, bool isSelected)
 			DetailWidget->SetTitle(CurrentContent->ItemName);
 			DetailWidget->SetDescrip(CurrentContent->ItemDescription);
 		}
-		UE_LOG(LogTemp, Warning, TEXT("UShooterStore::OnContentItemSelected( %s )"), *CurrentContent->ItemName.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("UShooterStore::OnContentItemSelected( %s )"), *CurrentContent->ItemName.ToString());
 		UE_LOG(LogTemp, Warning, TEXT("UShooterStore::OnContentItemSelected(isSelected = %s)"), isSelected == false ? TEXT("false") : TEXT("true"));
 	}
 	else
@@ -121,7 +121,7 @@ void UShooterStore::OnContentItemSelected(UObject* Item, bool isSelected)
 
 void UShooterStore::OnItemPurchase()
 {
-	UE_LOG(LogTemp, Warning, TEXT("UShooterStore::OnItemPurchase( CurrentContent = %s)"), *CurrentContent->ItemName.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("UShooterStore::OnItemPurchase( CurrentContent = %s)"), *CurrentContent->ItemName.ToString());
 
 	AShooterPlayerController* PC = Cast<AShooterPlayerController>(GetOwningPlayer());
 	AShooterCharacter* AC = Cast<AShooterCharacter>(PC->GetCharacter());
@@ -152,19 +152,19 @@ void UShooterStore::SetContentItem(const TArray<class UShooterItem*>& InItems)
 
 void UShooterStore::SetCurrentCategory(UShooterItem* InItems)
 {
-	UE_LOG(LogTemp, Warning, TEXT("UShooterStore::SetCurrentCategory( Item = %s )"), *InItems->ItemName.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("UShooterStore::SetCurrentCategory( Item = %s )"), *InItems->ItemName.ToString());
 	CurrentCategory = InItems;
 }
 
 void UShooterStore::SetCurrentContent(UShooterItem* InItems)
 {
-	UE_LOG(LogTemp, Warning, TEXT("UShooterStore::SetCurrentContent( Item = %s )"), *InItems->ItemName.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("UShooterStore::SetCurrentContent( Item = %s )"), *InItems->ItemName.ToString());
 	CurrentContent = InItems;
 }
 
 void UShooterStore::SetSelectedContentCategory(UShooterItem* InItems)
 {
-	UE_LOG(LogTemp, Warning, TEXT("UShooterStore::SetSelectedContentCategory( Item = %s )"), *InItems->ItemName.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("UShooterStore::SetSelectedContentCategory( Item = %s )"), *InItems->ItemName.ToString());
 	SelectedContentCategory = InItems;
 }
 

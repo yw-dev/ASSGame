@@ -15,7 +15,7 @@ Engine版本：UE 4.20.3
 
 ####  数据:
 
-- **DataAsset/DataTable(CSV)：** 角色默认状态表、各道具Struct的基本Asset配置。
+- **DataAsset/DataTable(CSV)：** 角色默认状态表、各道具数据结构的基本Asset配置。
 
 ####  UI:
 
@@ -25,7 +25,7 @@ Engine版本：UE 4.20.3
 - **Alert提示：** 动态创建TextBlock显示RPC请求的返回结果(如：购买功能)。
 - **计分板：**  团队角色计分一览。
 - **小地图：**  
-- **PlayerTarget：**  
+- **玩家目标：**  3D头像、玩家昵称、等级信息。
 
 ####  Props:
 
@@ -38,10 +38,10 @@ Engine版本：UE 4.20.3
 ####  Character:
 
 - **角色：** 
-- **头像：** Camera/RenderTarget 蓝图实现捕捉角色模型作为material渲染至UI控件。
+- **头像：** Camera/RenderTarget实现捕捉角色模型material渲染至UI控件。
 - **状态机：** 根据武器的类型执行默认、法杖、剑、斧、枪械等对应的子状态机。
 - **目标：**  
-- **近战攻击/伤害：** AbilitySystemComponent激活攻击的能力，LineTrace/AnimNotify实现近战攻击的单目标/多目标的命中碰撞检测和通知。
+- **近战攻击/伤害：** AbilitySystemComponent激活攻击的能力，LineTrace/AnimNotify实现近战攻击径向多目标的命中碰撞检测和通知。
 - **远程技能/伤害：**  
 - **等级/晋级：** 
 - **Inventory：** 
@@ -52,8 +52,9 @@ Engine版本：UE 4.20.3
 
 ####  NetWork:
 
-- **RPC：** 
-- **Replication：** 
+- **WorkFlow：** 
+- **RPC：** 购买/Alert消息、激活攻击/触发伤害
+- **Replication：** PlayerState、AttributeSet、WeaponActors、DamageInfo
 
 ####  AsyncTask:
 

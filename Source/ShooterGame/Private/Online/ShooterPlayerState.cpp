@@ -216,7 +216,7 @@ void AShooterPlayerState::UpdateInventorySlotted(FShooterItemSlot NewSlot, UShoo
 
 float AShooterPlayerState::GetHealth() const
 {
-	UE_LOG(LogTemp, Warning, TEXT("PlayerState::GetHealth() = %d"), AttributeSetBase->GetHealth());
+	//UE_LOG(LogTemp, Warning, TEXT("PlayerState::GetHealth() = %d"), AttributeSetBase->GetHealth());
 	return AttributeSetBase->GetHealth();
 }
 
